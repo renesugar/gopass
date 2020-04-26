@@ -12,7 +12,8 @@ import (
 	"github.com/gopasspw/gopass/tests/gptest"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 )
 
 func TestSync(t *testing.T) {
@@ -28,7 +29,8 @@ func TestSync(t *testing.T) {
 	ctx := context.Background()
 	ctx = ctxutil.WithAlwaysYes(ctx, true)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	app := cli.NewApp()
 
@@ -45,7 +47,7 @@ func TestSync(t *testing.T) {
 		Name:  "store",
 		Usage: "store",
 	}
-	assert.NoError(t, sf.ApplyWithError(fs))
+	assert.NoError(t, sf.Apply(fs))
 	assert.NoError(t, fs.Parse([]string{"--store=root"}))
 	c = cli.NewContext(app, fs, nil)
 

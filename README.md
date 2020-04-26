@@ -10,7 +10,6 @@
 [![Github All Releases](https://img.shields.io/github/downloads/gopasspw/gopass/total.svg)](https://github.com/gopasspw/gopass/releases)
 [![codecov](https://codecov.io/gh/gopasspw/gopass/branch/master/graph/badge.svg)](https://codecov.io/gh/gopasspw/gopass)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1899/badge)](https://bestpractices.coreinfrastructure.org/projects/1899)
-[![Download](https://api.bintray.com/packages/gopasspw/gopass/gopass/images/download.svg) ](https://bintray.com/gopasspw/gopass/gopass/_latestVersion)
 
 The slightly more awesome Standard Unix Password Manager for Teams. Written in Go.
 
@@ -23,9 +22,11 @@ The slightly more awesome Standard Unix Password Manager for Teams. Written in G
 5. [Development](#development)
 6. [Credit & License](#credit-&-license)
 7. [Community](#community)
-8. [Contributing](#contributing)
-9. [Acknowledgements](#acknowledgements)
-10. [Further Documentation](#further-documentation)
+8. [Integrations](#integrations)
+9. [Mobile apps](#mobile-apps)
+10. [Contributing](#contributing)
+11. [Acknowledgements](#acknowledgements)
+12. [Further Documentation](#further-documentation)
 
 ## Abstract
 
@@ -51,23 +52,34 @@ Please see [docs/features.md](https://github.com/gopasspw/gopass/blob/master/doc
 | K/V and YAML support        | ❌      | ✔        | *alpha*   | Special handling for Key/Value and YAML content in secrets        |
 | password leak checker       | ❌      | ✔        | *alpha*   | Perform **offline** checks against known leaked passwords         |
 | PAGER support               | ❌      | ✔        | *stable*  | Automatically invoke a pager on long output                       |
-| JSON API                    | ❌      | ✔        | *alpha*   | Allow gopass to be used as a native extension for browser plugins |
+| JSON API                    | ❌      | ✔        | *stable*   | Allow gopass to be used as a native extension for browser plugins |
 | Automatic fuzzy search      | ❌      | ✔        | *stable*  | Automatically search for matching store entries if a literal entry was not found |
 | gopass sync                 | ❌      | ✔        | *beta*    | Easy to use syncing of remote repos and GPG keys |
 | Desktop Notifications       | ❌      | ✔        | *beta*    | Display desktop notifications and completing long running operations |
-| OTP support                 | (✔)    | ✔        | *stable*  | Generate HOTP/TOTP tokens based on the stored secret               |
+| OTP support                 | (✔)    | ✔        | *stable*  | Generate TOTP/(HOTP) tokens based on the stored secret               |
 | Multiple Crypto Backends    | ❌      | ✔        | *alpha*   | Extensible crypto backend support (GPG, NaCl)                      |
 | Editing Recipients per Secret    | ❌      | ✔        | *beta*   | Select recipients per secret when encrypting |
+| Extensions                  | ✔      | ❌        |           | Extend gopass with custom commands |
 
 ## Installation
 
-If you have [Go](https://golang.org/) 1.10 (or greater) installed:
+If you have [Go](https://golang.org/) 1.12 (or greater) installed:
 
 ```bash
 go get github.com/gopasspw/gopass
 ```
 
 Otherwise, please see [docs/setup.md](https://github.com/gopasspw/gopass/blob/master/docs/setup.md).
+
+
+## Upgrade
+
+To upgrade with Go installed, run:
+```bash
+go get -u github.com/gopasspw/gopass
+```
+
+Otherwise, use the setup docs mentioned in the installation section to reinstall the latest version.
 
 ## Development
 
@@ -77,13 +89,13 @@ We aim for compatibility with the [latest stable Go Release](https://golang.org/
 
 ## Credit & License
 
-gopass is maintained by the nice folks from [JustWatch](https://www.justwatch.com/gopass) and licensed under the terms of the MIT license.
+gopass was created by the nice folks from [JustWatch](https://www.justwatch.com/gopass) and licensed under the terms of the MIT license.
 
 Maintainers of this repository:
 
-* Christoph Oelmüller <christoph.oelmueller@justwatch.com> [@zwopir](https://github.com/zwopir)
+* Dominik Schulz <dominik.schulz@gmail.com> [@dominikschulz](https://github.com/dominikschulz)
+* Martin Hoefling [@martinhoefling](https://github.com/martinhoefling)
 * Matthias Loibl <mail@matthiasloibl.com> [@metalmatze](https://github.com/metalmatze)
-* Dominik Schulz <dominik.schulz@justwatch.com> [@dominikschulz](https://github.com/dominikschulz)
 
 Please refer to the Git commit log for a complete list of contributors.
 
@@ -93,7 +105,18 @@ gopass is developed in the open. Here are some of the channels we use to communi
 
 * IRC: #gopass on [irc.freenode.net](https://freenode.net) ([join via Riot](https://riot.im/app/#/room/#freenode_#gopass:matrix.org))
 * Usage mailing list: [gopass-users](https://groups.google.com/forum/#!forum/gopass-users), for discussions around gopass usage and community support
-* Issue tracker: Use the [GitHub issue tracker](https://github.com/gopasspw/gopass/issues) to file bugs and feature requests. If you need support, please send your questions to [gopass-user](https://groups.google.com/forum/#!forum/gopass-users) or ask on IRC rather than filing a GitHub issue.
+* Issue tracker: Use the [GitHub issue tracker](https://github.com/gopasspw/gopass/issues) to file bugs and feature requests. If you need support, please send your questions to [gopass-users](https://groups.google.com/forum/#!forum/gopass-users) or ask on IRC rather than filing a GitHub issue.
+
+## Integrations
+
+- [gopassbridge](https://github.com/gopasspw/gopassbridge): Browser plugin for Firefox, Chrome and other Chromium based browsers
+- [kubectl gopass](https://github.com/gopasspw/kubectl-gopass): Kubernetes / kubectl plugin to support reading and writing secrets directly from/to gopass.
+- [gopass alfred](https://github.com/gopasspw/gopass-alfred): Alfred workflow to use gopass from the Alfred Mac launcher
+
+## Mobile apps
+
+- [Pass - Password Store](https://apps.apple.com/us/app/pass-password-store/id1205820573) - iOS, [source code](https://github.com/mssun/passforios), [supports only 1 repository now](https://github.com/mssun/passforios/issues/88)
+- [Password Store](https://play.google.com/store/apps/details?id=dev.msfjarvis.aps) - Android
 
 ## Contributing
 
@@ -110,3 +133,7 @@ gopass was initially started by Matthias Loibl and Dominik Schulz. The majority 
 * [FAQ](https://github.com/gopasspw/gopass/blob/master/docs/faq.md)
 * [JSON API](https://github.com/gopasspw/gopass/blob/master/docs/jsonapi.md)
 * [Gopass as Summon provider](https://github.com/gopasspw/gopass/blob/master/docs/summon-provider.md)
+
+## External Documentation
+* [gopass cheat sheet](https://woile.github.io/gopass-cheat-sheet/) ([source on github])https://github.com/Woile/gopass-presentation)
+* [gopass presentation](https://woile.github.io/gopass-presentation/) ([source on github](https://github.com/Woile/gopass-presentation))

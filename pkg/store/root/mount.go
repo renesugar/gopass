@@ -10,7 +10,6 @@ import (
 	"github.com/gopasspw/gopass/pkg/out"
 	"github.com/gopasspw/gopass/pkg/store"
 	"github.com/gopasspw/gopass/pkg/store/sub"
-	"github.com/gopasspw/gopass/pkg/store/vault"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -34,7 +33,7 @@ func (r *Store) addMount(ctx context.Context, alias, path string, sc *config.Sto
 		r.mounts = make(map[string]store.Store, 1)
 	}
 	if _, found := r.mounts[alias]; found {
-		return errors.Errorf("%s is already mounted", alias)
+		return AlreadyMountedError(alias)
 	}
 
 	out.Debug(ctx, "addMount - Path: %s - StoreConfig: %+v", path, sc)
@@ -59,7 +58,7 @@ func (r *Store) addMount(ctx context.Context, alias, path string, sc *config.Sto
 	// initialize sub store
 	s, err := r.initSub(ctx, sc, alias, pathURL, keys)
 	if err != nil {
-		return errors.Wrapf(err, "failed to init sub store")
+		return errors.Wrapf(err, "failed to init sub store '%s' at '%s'", alias, pathURL)
 	}
 
 	r.mounts[alias] = s
@@ -88,17 +87,7 @@ func (r *Store) addMount(ctx context.Context, alias, path string, sc *config.Sto
 	return nil
 }
 
-func (r *Store) initSubVault(ctx context.Context, alias string, path *backend.URL) (store.Store, error) {
-	return vault.New(ctx, alias, path, r.cfg.Directory(), r.agent)
-}
-
 func (r *Store) initSub(ctx context.Context, sc *config.StoreConfig, alias string, path *backend.URL, keys []string) (store.Store, error) {
-	// init vault sub store
-	if backend.GetCryptoBackend(ctx) == backend.Vault || path.Crypto == backend.Vault {
-		out.Debug(ctx, "Initializing Vault Store at %s -> %s", alias, path.String())
-		return r.initSubVault(ctx, alias, path)
-	}
-
 	// init regular sub store
 	s, err := sub.New(ctx, r.cfg, alias, path, r.cfg.Directory(), r.agent)
 	if err != nil {
@@ -111,7 +100,7 @@ func (r *Store) initSub(ctx context.Context, sc *config.StoreConfig, alias strin
 
 	out.Debug(ctx, "[%s] Mount %s is not initialized", alias, path)
 	if len(keys) < 1 {
-		return s, errors.Errorf("password store %s is not initialized. Try gopass init --store %s --path %s", alias, alias, path)
+		return s, NotInitializedError{alias, path.String()}
 	}
 	if err := s.Init(ctx, path.String(), keys...); err != nil {
 		return s, errors.Wrapf(err, "failed to initialize store '%s' at '%s'", alias, path)

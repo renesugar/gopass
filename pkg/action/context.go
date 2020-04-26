@@ -10,6 +10,8 @@ const (
 	ctxKeyPasswordOnly
 	ctxKeyPrintQR
 	ctxKeyRevision
+	ctxKeyKey
+	ctxKeyOnlyClip
 )
 
 // WithClip returns a context with the value for clip (for copy to clipboard)
@@ -21,6 +23,21 @@ func WithClip(ctx context.Context, clip bool) context.Context {
 // IsClip returns the value of clip or the default (false)
 func IsClip(ctx context.Context) bool {
 	bv, ok := ctx.Value(ctxKeyClip).(bool)
+	if !ok {
+		return false
+	}
+	return bv
+}
+
+// WithOnlyClip returns a context with the value for clip (for copy to clipboard)
+// set
+func WithOnlyClip(ctx context.Context, clip bool) context.Context {
+	return context.WithValue(ctx, ctxKeyOnlyClip, clip)
+}
+
+// IsOnlyClip returns the value of clip or the default (false)
+func IsOnlyClip(ctx context.Context) bool {
+	bv, ok := ctx.Value(ctxKeyOnlyClip).(bool)
 	if !ok {
 		return false
 	}
@@ -83,6 +100,26 @@ func HasRevision(ctx context.Context) bool {
 // GetRevision returns the revison set in this context or an empty string
 func GetRevision(ctx context.Context) string {
 	sv, ok := ctx.Value(ctxKeyRevision).(string)
+	if !ok {
+		return ""
+	}
+	return sv
+}
+
+// WithKey returns a context with the key set
+func WithKey(ctx context.Context, sv string) context.Context {
+	return context.WithValue(ctx, ctxKeyKey, sv)
+}
+
+// HasKey returns true if the key is set
+func HasKey(ctx context.Context) bool {
+	_, ok := ctx.Value(ctxKeyKey).(string)
+	return ok
+}
+
+// GetKey returns the value of key or the default (empty string)
+func GetKey(ctx context.Context) string {
+	sv, ok := ctx.Value(ctxKeyKey).(string)
 	if !ok {
 		return ""
 	}

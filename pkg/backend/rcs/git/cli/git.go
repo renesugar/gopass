@@ -59,14 +59,20 @@ func Init(ctx context.Context, path, userName, userEmail string) (*Git, error) {
 	// or already initialized. Only run git init if the folder is completely empty
 	if !g.IsInitialized() {
 		if err := g.Cmd(ctx, "Init", "init"); err != nil {
-			return nil, errors.Errorf("Failed to initialize git: %s", err)
+			return nil, errors.Errorf("failed to initialize git: %s", err)
 		}
+		out.Red(ctx, "git initialized at %s", g.path)
+	}
+
+	if !ctxutil.IsGitInit(ctx) {
+		return g, nil
 	}
 
 	// initialize the local git config
 	if err := g.InitConfig(ctx, userName, userEmail); err != nil {
 		return g, errors.Errorf("failed to configure git: %s", err)
 	}
+	out.Red(ctx, "git configured at %s", g.path)
 
 	// add current content of the store
 	if err := g.Add(ctx, g.path); err != nil {
@@ -110,7 +116,7 @@ func (g *Git) Cmd(ctx context.Context, name string, args ...string) error {
 	stdout, stderr, err := g.captureCmd(ctx, name, args...)
 	if err != nil {
 		out.Debug(ctx, "Output:\n  Stdout: '%s'\n  Stderr: '%s'", string(stdout), string(stderr))
-		return err
+		return fmt.Errorf(strings.TrimSpace(string(stderr)))
 	}
 
 	return nil
@@ -330,6 +336,16 @@ func (g *Git) GetRevision(ctx context.Context, name, revision string) ([]byte, e
 	stdout, stderr, err := g.captureCmd(ctx, "GetRevision", args...)
 	if err != nil {
 		out.Debug(ctx, "Command failed: %s", string(stderr))
+		return nil, err
+	}
+	return stdout, nil
+}
+
+// Status return the git status output
+func (g *Git) Status(ctx context.Context) ([]byte, error) {
+	stdout, stderr, err := g.captureCmd(ctx, "GitStatus", "status")
+	if err != nil {
+		out.Debug(ctx, "Command failed: %s\n%s", string(stdout), string(stderr))
 		return nil, err
 	}
 	return stdout, nil

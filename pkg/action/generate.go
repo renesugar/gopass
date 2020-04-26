@@ -18,10 +18,9 @@ import (
 	"github.com/gopasspw/gopass/pkg/store/secret"
 	"github.com/gopasspw/gopass/pkg/store/sub"
 	"github.com/gopasspw/gopass/pkg/termio"
-	"github.com/gopasspw/gopass/pkg/tpl"
 
 	"github.com/fatih/color"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -41,6 +40,8 @@ func (s *Action) Generate(ctx context.Context, c *cli.Context) error {
 	args, kvps := parseArgs(c)
 	name := args.Get(0)
 	key, length := keyAndLength(args)
+
+	ctx = ctxutil.WithForce(ctx, force)
 
 	// ask for name of the secret if it wasn't provided already
 	if name == "" {
@@ -102,7 +103,7 @@ func keyAndLength(args argList) (string, string) {
 // generateCopyOrPrint will print the password to the screen or copy to the
 // clipboard
 func (s *Action) generateCopyOrPrint(ctx context.Context, c *cli.Context, name, key, password string) error {
-	if c.Bool("print") {
+	if ctxutil.IsAutoPrint(ctx) || c.Bool("print") {
 		if key != "" {
 			key = " " + key
 		}
@@ -111,13 +112,23 @@ func (s *Action) generateCopyOrPrint(ctx context.Context, c *cli.Context, name, 
 			"The generated password for %s%s is:\n%s", name, key,
 			color.YellowString(password),
 		)
-		return nil
 	}
+
 	if ctxutil.IsAutoClip(ctx) || c.Bool("clip") {
 		if err := clipboard.CopyTo(ctx, name, []byte(password)); err != nil {
 			return ExitError(ctx, ExitIO, err, "failed to copy to clipboard: %s", err)
 		}
 	}
+
+	if c.Bool("print") || c.Bool("clip") {
+		return nil
+	}
+
+	entry := name
+	if key != "" {
+		entry += ":" + key
+	}
+	out.Print(ctx, "Password for %s generated", entry)
 	return nil
 }
 
@@ -153,9 +164,15 @@ func (s *Action) generatePassword(ctx context.Context, c *cli.Context, length st
 		return "", ExitError(ctx, ExitUsage, nil, "password length must not be zero")
 	}
 
-	corp, err := termio.AskForBool(ctx, "Do you have strict rules to include different character classes?", false)
-	if err != nil {
-		return "", err
+	var corp bool
+	if c.IsSet("strict") || c.Bool("force") {
+		corp = c.Bool("strict")
+	} else {
+		var err error
+		corp, err = termio.AskForBool(ctx, "Do you have strict rules to include different character classes?", false)
+		if err != nil {
+			return "", err
+		}
 	}
 	if corp {
 		return pwgen.GeneratePasswordWithAllClasses(pwlen)
@@ -231,16 +248,14 @@ func (s *Action) generateSetPassword(ctx context.Context, name, key, password st
 	// generate a completely new secret
 	var err error
 	sec := secret.New(password, "")
-	if tmpl, found := s.Store.LookupTemplate(ctx, name); found {
-		content, err := tpl.Execute(ctx, string(tmpl), name, []byte(password), s.Store)
-		if err != nil {
-			return nil, ExitError(ctx, ExitUnknown, err, "failed to execute template: %s", err)
-		}
-		sec, err = secret.Parse(content)
-		if err != nil {
-			return nil, ExitError(ctx, ExitUnknown, err, "failed to parse secret: %s", err)
+
+	if content, found := s.renderTemplate(ctx, name, []byte(password)); found {
+		nSec, err := secret.Parse(content)
+		if err == nil {
+			sec = nSec
 		}
 	}
+
 	ctx, err = s.Store.SetContext(sub.WithReason(ctx, "Generated Password"), name, sec)
 	if err != nil {
 		return ctx, ExitError(ctx, ExitEncrypt, err, "failed to create '%s': %s", name, err)
@@ -256,15 +271,14 @@ func setMetadata(sec store.Secret, kvps map[string]string) {
 
 // CompleteGenerate implements the completion heuristic for the generate command
 func (s *Action) CompleteGenerate(ctx context.Context, c *cli.Context) {
-	args := c.Args()
-	if len(args) < 1 {
+	if c.Args().Len() < 1 {
 		return
 	}
-	needle := args[0]
+	needle := c.Args().Get(0)
 
 	_, err := s.Store.Initialized(ctx) // important to make sure the structs are not nil
 	if err != nil {
-		out.Red(ctx, "Store not initialized: %s", err)
+		out.Error(ctx, "Store not initialized: %s", err)
 		return
 	}
 	list, err := s.Store.List(ctx, 0)

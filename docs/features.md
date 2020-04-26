@@ -7,7 +7,10 @@ gopass supports.
 
 ### Data Organization
 
-Before you start using gopass, you should know a little bit about how it stores your data. It's actually really simple! Each password (or secret) will live in its own file. And you can stick related passwords (or secrets) together in a directory. So, for example, if you had 3 laptops and wanted to store the root passwords for all 3, then your file system might look something like the following:
+Before you start using gopass, you should know a little bit about how it stores your data.
+It's actually really simple! Each password (or secret) will live in its own file.
+And you can stick related passwords (or secrets) together in a directory.
+So, for example, if you had 3 laptops and wanted to store the root passwords for all 3, then your file system might look something like the following:
 
 ```
 .password-store
@@ -40,23 +43,26 @@ example2.com/john@doe.com
 
 ### Initializing a Password Store
 
-After installing gopass, the first thing you should do is initialize a password store. (If you are migrating to gopass from pass and already have a password store, you can skip this step.)
+After installing gopass, the first thing you should do is initialize a password store.
+(If you are migrating to gopass from pass and already have a password store, you can skip this step.)
 
-Note that this document uses the term *password store* to refer to a directory that is managed by gopass. This is entirely different from any OS-level credential store, your GPG key ring, or your SSH keys.
+Note that this document uses the term *password store* to refer to a directory that is managed by gopass.
+This is entirely different from any OS-level credential store, your GPG key ring, or your SSH keys.
 
-To initialize a password store, just do a:
+To initialize a password store, just do:
 
 ```bash
 gopass init
 ```
 
-This will prompt you for which GPG key you want to associate the store with. Then it will create a `.password-store` directory in your home directory.
+This will prompt you for which GPG key you want to associate the store with.
+Then it will create a `.password-store` directory in your home directory.
 
 If you don't want gopass to use this default directory, you can instead initialize a password store with:
 
 ```bash
 gopass init --path /custom/path/to/password/store
-````
+```
 
 If you don't want gopass to prompt you for the GPG key to use, you can specify it inline. For example, this might be useful if you have a huge number of GPG keys on the system or if you are initializing a password store from a script. You can do this in three different ways:
 
@@ -68,7 +74,7 @@ gopass init 1E52C1335AC1F4F4FE02F62AB5B44266A3683834 # By specifying the GPG key
 
 ### Cloning an Existing Password Store
 
-If you already have an existing password store that exists in a Git repository, then use `gitpass` to clone it:
+If you already have an existing password store that exists in a Git repository, then use `gopass` to clone it:
 
 ```bash
 gopass clone git@example.com/pass.git
@@ -82,7 +88,7 @@ gopass clone git@example.com/pass-work.git work # This will initialize the passw
 
 Please note that all cloned repositories must already have been initialized with gopass. (See the previous section for more details.)
 
-Note too that unless you are already a recipient of the cloned repository, you must add a the destination's public GPG key as a recipient to the existing store.
+Note too that unless you are already a recipient of the cloned repository, you must add the destination's public GPG key as a recipient to the existing store.
 
 ### Adding Secrets
 
@@ -164,7 +170,7 @@ totp: ABC123
 
 Some sites will not directly show you the URL contained in the QR code. If this is the case, you can use something like [zbar](http://zbar.sourceforge.net/) to extract the URL.
 
-Both TOTP and HOTP are supported.
+Both TOTP and HOTP are supported. However, to generate HOTP tokens, the counter in the stored URL must be manually incremented (e.g. via `gopass edit myhotpsecret`). 
 
 ### Listing existing secrets
 
@@ -266,7 +272,7 @@ Detected weak secret for 'golang.org/gopher': Password is too short
 
 ### Check Passwords against leaked passwords
 
-gopass can assist you in checking your passwords against those included in recent data breaches. 
+gopass can assist you in checking your passwords against those included in recent data breaches.
 You can either check against the HIBPv2 API (recommended) or download the dumps (v1 or v2) and
 perform the check fully offline.
 
@@ -278,15 +284,15 @@ gopass audit hibp --api
 
 #### Using the Dumps
 
-First go to [haveibeenpwned.com/Passwords](https://haveibeenpwned.com/Passwords) and download the dumps. Then unpack the 7-zip archives somewhere. Note that full path to those files and provide it to gopass in the environment variable `HIBP_DUMPS`.
+First go to [haveibeenpwned.com/Passwords](https://haveibeenpwned.com/Passwords) and download the dumps. Then unpack the 7-zip archives somewhere. Note that full path to those files and provide it to gopass `--dumps` flag.
 
 ```bash
-$ HIBP_DUMPS=/tmp/pwned-passwords-1.0.txt gopass audit hibp
+$ gopass audit hibp --dumps /tmp/pwned-passwords-1.0.txt
 ```
 
 ### Support for Binary Content
 
-gopass provides secure and easy support for working with binary files through the `gopass binary` family of sub commands. One can copy or move secret from or to the store. gopass will attempt to securely overwrite and remove any secret moved to the store.
+gopass provides secure and easy support for working with binary files through the `gopass binary` family of sub-commands. One can copy or move secret from or to the store. gopass will attempt to securely overwrite and remove any secret moved to the store.
 
 ```bash
 # copy file "/some/file.jpg" to "some/secret.b64" in the store
@@ -359,13 +365,12 @@ gopass allows editing the config from the command-line. This is similar to how g
 
 ```bash
 $ gopass config
-alwaystrust: false
 askformore: false
+autoclip: true
 autoimport: false
-autopull: false
-autopush: true
+autoprint: false
+autosync: true
 cliptimeout: 10
-loadkeys: false
 noconfirm: false
 path: /home/user/.password-store
 
@@ -400,6 +405,8 @@ Running `gopass recipients` will also try to load and save any missing GPG keys 
 
 The commands manipulating recipients, i.e. `gopass recipients add` and `gopass recipients remove` accept a `--store` flag that expects the *name of a mount point* to operate on this mounted sub store.
 
+To check and reencrypt secrets if recipients are missing, run `gopass fsck`.
+
 ### Recipient Integrity
 
 gopass will try to warn you if the list of recipients is changed. The way that
@@ -426,7 +433,7 @@ To restrict the characters used in generated passwords set `GOPASS_CHARACTER_SET
 
 ### Using custom password generators
 
-To use an external password generator set `GOPASS_EXTERNAL_PWGEN` to any valid executeable with all required arguments. Please note that the command will be run as-is. Not parameters to control length or complexity can be passed. Any errors will be silently ignored and gopass will fall back to the internal password generator instead.
+To use an external password generator set `GOPASS_EXTERNAL_PWGEN` to any valid executable with all required arguments. Please note that the command will be run as-is. Not parameters to control length or complexity can be passed. Any errors will be silently ignored and gopass will fall back to the internal password generator instead.
 
 ### In-place updates to existing passwords
 
@@ -446,4 +453,8 @@ This makes it easy to use templates for certain kind of secrets such as database
 
 ### JSON API
 
-`gopass jsonapi` enables communication with gopass via JSON messages. This is particularly useful for browser plugins like [gopassbridge](https://github.com/martinhoefling/gopassbridge) running gopass as native app. More details can be found in [docs/jsonapi.md](docs/jsonapi.md).
+`gopass jsonapi` enables communication with gopass via JSON messages. This is particularly useful for browser plugins like [gopassbridge](https://github.com/gopasspw/gopassbridge) running gopass as native app. More details can be found in [docs/jsonapi.md](./jsonapi.md).
+
+### Passphrase Agent
+
+`gopass agent` launches a long-running socket, similar to gpg-agent's socket, for requesting and caching the passphrase used to encrypt passwords. This allows one-off gopass operations (such as storing a password) to retrieve a cached copy of the passphrase. Communication over the socket uses HTTP. The agent is used for custom backends and stores that are encrypted with the passphrase as well as for testing.

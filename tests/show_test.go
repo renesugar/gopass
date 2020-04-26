@@ -2,12 +2,16 @@ package tests
 
 import (
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestShow(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	ts := newTester(t)
 	defer ts.teardown()
 
@@ -35,7 +39,8 @@ func TestShow(t *testing.T) {
 
 	out, err = ts.run("show fixed/secret")
 	assert.NoError(t, err)
-	assert.Contains(t, out, "safe content to display, you can force display with show -f.\nCopying password instead.")
+	assert.Contains(t, out, "safe content to display, you can force display with -f.")
+	assert.Contains(t, out, "Copying password instead.")
 
 	_, err = ts.run("config autoclip false")
 	assert.NoError(t, err)
@@ -50,11 +55,11 @@ func TestShow(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "more stuff", out)
 
-	out, err = ts.run("show fixed/twoliner -f")
+	out, err = ts.run("show -f fixed/twoliner")
 	assert.NoError(t, err)
 	assert.Equal(t, "and\nmore stuff", out)
 
-	out, err = ts.run("show fixed/twoliner -c")
+	out, err = ts.run("show -c fixed/twoliner")
 	assert.NoError(t, err)
 	assert.NotContains(t, out, "safe content to display")
 

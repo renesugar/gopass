@@ -5,6 +5,7 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/gopasspw/gopass/pkg/backend"
@@ -15,9 +16,14 @@ import (
 	"github.com/gopasspw/gopass/pkg/store/secret"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestList(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
+
 	ctx := context.Background()
 
 	obuf := &bytes.Buffer{}
@@ -70,7 +76,7 @@ func TestList(t *testing.T) {
 	} {
 		// common setup
 		tempdir, err := ioutil.TempDir("", "gopass-")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		s := &Store{
 			alias:   "",
@@ -89,7 +95,7 @@ func TestList(t *testing.T) {
 
 		// run test case
 		out, err := s.List(ctx, "")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, tc.out, out)
 		obuf.Reset()
 

@@ -6,9 +6,11 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCleanFilename(t *testing.T) {
@@ -26,13 +28,13 @@ func TestCleanFilename(t *testing.T) {
 
 func TestCleanPath(t *testing.T) {
 	tempdir, err := ioutil.TempDir("", "gopass-")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer func() {
 		_ = os.RemoveAll(tempdir)
 	}()
 
 	m := map[string]string{
-		".": "",
+		".":                                 "",
 		"/home/user/../bob/.password-store": "/home/bob/.password-store",
 		"/home/user//.password-store":       "/home/user/.password-store",
 		tempdir + "/foo.gpg":                tempdir + "/foo.gpg",
@@ -55,7 +57,7 @@ func TestCleanPath(t *testing.T) {
 
 func TestIsDir(t *testing.T) {
 	tempdir, err := ioutil.TempDir("", "gopass-")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer func() {
 		_ = os.RemoveAll(tempdir)
 	}()
@@ -69,7 +71,7 @@ func TestIsDir(t *testing.T) {
 
 func TestIsFile(t *testing.T) {
 	tempdir, err := ioutil.TempDir("", "gopass-")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer func() {
 		_ = os.RemoveAll(tempdir)
 	}()
@@ -81,8 +83,11 @@ func TestIsFile(t *testing.T) {
 }
 
 func TestShred(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	tempdir, err := ioutil.TempDir("", "gopass-")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer func() {
 		_ = os.RemoveAll(tempdir)
 	}()
@@ -117,22 +122,22 @@ func TestShred(t *testing.T) {
 
 func TestIsEmptyDir(t *testing.T) {
 	tempdir, err := ioutil.TempDir("", "gopass-")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer func() {
 		_ = os.RemoveAll(tempdir)
 	}()
 
 	fn := filepath.Join(tempdir, "foo", "bar", "baz", "zab")
-	assert.NoError(t, os.MkdirAll(fn, 0755))
+	require.NoError(t, os.MkdirAll(fn, 0755))
 
 	isEmpty, err := IsEmptyDir(tempdir)
 	assert.NoError(t, err)
 	assert.Equal(t, true, isEmpty)
 
 	fn = filepath.Join(fn, ".config.yml")
-	assert.NoError(t, ioutil.WriteFile(fn, []byte("foo"), 0644))
+	require.NoError(t, ioutil.WriteFile(fn, []byte("foo"), 0644))
 
 	isEmpty, err = IsEmptyDir(tempdir)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, false, isEmpty)
 }

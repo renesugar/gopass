@@ -13,7 +13,8 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 )
 
 func TestInsert(t *testing.T) {
@@ -24,7 +25,8 @@ func TestInsert(t *testing.T) {
 	ctx = ctxutil.WithAlwaysYes(ctx, true)
 	ctx = ctxutil.WithTerminal(ctx, false)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	buf := &bytes.Buffer{}
 	out.Stdout = buf
@@ -53,7 +55,7 @@ func TestInsert(t *testing.T) {
 	assert.NoError(t, act.insertStdin(ctx, "baz", []byte("foobar"), false))
 	buf.Reset()
 
-	assert.NoError(t, act.show(ctx, c, "baz", "", false))
+	assert.NoError(t, act.show(ctx, c, "baz", false))
 	assert.Equal(t, "foobar", buf.String())
 	buf.Reset()
 
@@ -66,7 +68,7 @@ func TestInsert(t *testing.T) {
 		Name:  "multiline",
 		Usage: "multiline",
 	}
-	assert.NoError(t, bf.ApplyWithError(fs))
+	assert.NoError(t, bf.Apply(fs))
 	assert.NoError(t, fs.Parse([]string{"--multiline=true", "bar", "baz"}))
 	c = cli.NewContext(app, fs, nil)
 

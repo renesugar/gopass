@@ -34,18 +34,14 @@ func (r *Store) move(ctx context.Context, from, to string, delete bool) error {
 
 	srcIsDir := r.IsDir(ctx, from)
 	dstIsDir := r.IsDir(ctx, to)
-	// if  source is a directory it must end with a slash
-	if srcIsDir && !strings.HasSuffix(from, "/") {
-		return errors.New("is a directory")
-	}
 	if srcIsDir && r.Exists(ctx, to) && !dstIsDir {
-		return errors.New("is a file")
+		return errors.New("destination is a file")
 	}
 
 	if err := r.moveFromTo(ctxFrom, ctxTo, subFrom, subTo, from, to, fromPrefix, srcIsDir, delete); err != nil {
 		return err
 	}
-	if err := subFrom.RCS().Commit(ctxFrom, fmt.Sprintf("Moved from %s to %s", from, to)); err != nil {
+	if err := subFrom.RCS().Commit(ctxFrom, fmt.Sprintf("Move from %s to %s", from, to)); err != nil {
 		switch errors.Cause(err) {
 		case store.ErrGitNotInit:
 			out.Debug(ctx, "reencrypt - skipping git commit - git not initialized")
@@ -54,7 +50,7 @@ func (r *Store) move(ctx context.Context, from, to string, delete bool) error {
 		}
 	}
 	if !subFrom.Equals(subTo) {
-		if err := subTo.RCS().Commit(ctxTo, fmt.Sprintf("Moved from %s to %s", from, to)); err != nil {
+		if err := subTo.RCS().Commit(ctxTo, fmt.Sprintf("Move from %s to %s", from, to)); err != nil {
 			switch errors.Cause(err) {
 			case store.ErrGitNotInit:
 				out.Debug(ctx, "reencrypt - skipping git commit - git not initialized")
@@ -73,7 +69,7 @@ func (r *Store) move(ctx context.Context, from, to string, delete bool) error {
 		if errors.Cause(err) == store.ErrGitNotInit {
 			msg := "Warning: git is not initialized for this.storage. Ignoring auto-push option\n" +
 				"Run: gopass git init"
-			out.Red(ctx, msg)
+			out.Error(ctx, msg)
 			return nil
 		}
 		if errors.Cause(err) == store.ErrGitNoRemote {
@@ -89,7 +85,7 @@ func (r *Store) move(ctx context.Context, from, to string, delete bool) error {
 			if errors.Cause(err) == store.ErrGitNotInit {
 				msg := "Warning: git is not initialized for this.storage. Ignoring auto-push option\n" +
 					"Run: gopass git init"
-				out.Red(ctx, msg)
+				out.Error(ctx, msg)
 				return nil
 			}
 			if errors.Cause(err) == store.ErrGitNoRemote {
@@ -123,7 +119,12 @@ func (r *Store) moveFromTo(ctxFrom, ctxTo context.Context, subFrom, subTo store.
 	for _, src := range entries {
 		dst := to
 		if srcIsDir {
-			dst = path.Join(to, path.Base(from), strings.TrimPrefix(src, from))
+			// Follow the rsync convention to not re-create the source folder at the destination when a "/" is found
+			if strings.HasSuffix(from, "/") {
+				dst = path.Join(to, strings.TrimPrefix(src, from))
+			} else {
+				dst = path.Join(to, path.Base(from), strings.TrimPrefix(src, from))
+			}
 		}
 		out.Debug(ctxFrom, "Moving %s (%s) => %s (%s) (sid:%t)\n", from, src, to, dst, srcIsDir)
 
@@ -132,7 +133,7 @@ func (r *Store) moveFromTo(ctxFrom, ctxTo context.Context, subFrom, subTo store.
 			return errors.Errorf("Source %s does not exist in source store %s: %s", from, subFrom.Alias(), err)
 		}
 
-		if err := r.Set(sub.WithReason(ctxTo, fmt.Sprintf("Moved from %s to %s", src, dst)), dst, content); err != nil {
+		if err := r.Set(sub.WithReason(ctxTo, fmt.Sprintf("Move from %s to %s", src, dst)), dst, content); err != nil {
 			return errors.Wrapf(err, "failed to save secret '%s'", to)
 		}
 

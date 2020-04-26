@@ -15,7 +15,8 @@ import (
 
 	"github.com/gokyle/twofactor"
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 )
 
 func TestOTP(t *testing.T) {
@@ -25,7 +26,8 @@ func TestOTP(t *testing.T) {
 	ctx := context.Background()
 	ctx = ctxutil.WithAlwaysYes(ctx, true)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	buf := &bytes.Buffer{}
 	out.Stdout = buf
@@ -54,7 +56,7 @@ func TestOTP(t *testing.T) {
 	buf.Reset()
 
 	// copy to clipboard
-	assert.NoError(t, act.otp(ctx, "bar", "", true))
+	assert.NoError(t, act.otp(ctx, c, "bar", "", true, false, false))
 	buf.Reset()
 
 	// write QR file
@@ -63,7 +65,7 @@ func TestOTP(t *testing.T) {
 		Name:  "qr",
 		Usage: "qr",
 	}
-	assert.NoError(t, sf.ApplyWithError(fs))
+	assert.NoError(t, sf.Apply(fs))
 	fn := filepath.Join(u.Dir, "qr.png")
 	assert.NoError(t, fs.Parse([]string{"--qr=" + fn, "bar"}))
 	c = cli.NewContext(app, fs, nil)

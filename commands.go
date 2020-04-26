@@ -12,18 +12,17 @@ import (
 	"github.com/gopasspw/gopass/pkg/agent/client"
 	"github.com/gopasspw/gopass/pkg/config"
 	"github.com/gopasspw/gopass/pkg/ctxutil"
-
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Command {
-	return []cli.Command{
+func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []*cli.Command {
+	return []*cli.Command{
 		{
 			Name:  "agent",
 			Usage: "Start gopass-agent",
 			Description: "" +
-				"This command start the gopass agent that will cache passphrases" +
-				"so they don't have to be entered repeately.",
+				"This command starts the gopass agent that will cache passphrases " +
+				"so they don't have to be entered repeatedly.",
 			Action: func(c *cli.Context) error {
 				ec := make(chan error)
 				go func() {
@@ -36,7 +35,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 					return e
 				}
 			},
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:   "client",
 					Usage:  "Start a simple agent test client",
@@ -63,21 +62,22 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 				return action.Audit(withGlobalFlags(ctx, c), c)
 			},
 			Flags: []cli.Flag{
-				cli.IntFlag{
-					Name:  "jobs, j",
-					Usage: "The number of jobs to run concurrently when auditing",
-					Value: 1,
+				&cli.IntFlag{
+					Name:    "jobs",
+					Aliases: []string{"j"},
+					Usage:   "The number of jobs to run concurrently when auditing",
+					Value:   1,
 				},
 			},
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:  "hibp",
 					Usage: "Detect leaked passwords",
 					Description: "" +
 						"This command will decrypt all secrets and check the passwords against the public " +
-						"havibeenpwned.com v2 API or Dumps. " +
-						"To use the dumps you need to download the dumps from https://haveibeenpwned.com/passwords first. Be sure to grap the one that says '(ordered by hash)'. " +
-						"This is a very expensive operation for advanced users. " +
+						"havibeenpwned.com v2 API or dumps. " +
+						"To use the dumps you need to download the dumps from https://haveibeenpwned.com/passwords first. Be sure to grab the one that says '(ordered by hash)'. " +
+						"This is a very expensive operation, for advanced users. " +
 						"Most users should probably use the API. " +
 						"If you want to use the dumps you need to use 7z to extract the dump: 7z x pwned-passwords-ordered-2.0.txt.7z.",
 					Before: func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
@@ -85,15 +85,17 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return action.HIBP(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.BoolFlag{
-							Name:  "force, f",
-							Usage: "Force to move the secret and overwrite existing one",
+						&cli.BoolFlag{
+							Name:    "force",
+							Aliases: []string{"f"},
+							Usage:   "Force to move the secret and overwrite existing one",
 						},
-						cli.BoolFlag{
-							Name:  "api, a",
-							Usage: "Use HIBP API",
+						&cli.BoolFlag{
+							Name:    "api",
+							Aliases: []string{"a"},
+							Usage:   "Use HIBP API",
 						},
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name:  "dumps",
 							Usage: "One or more HIBP v1/v2 dumps",
 						},
@@ -107,10 +109,10 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Description: "" +
 				"These commands directly convert binary files from/to base64 encoding.",
 			Aliases: []string{"bin"},
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:  "cat",
-					Usage: "Print content of a secret to stdout or insert from stdin",
+					Usage: "Print content of a secret to stdout, or insert from stdin",
 					Description: "" +
 						"This command is similar to the way cat works on the command line. " +
 						"It can either be used to retrieve the decoded content of a secret " +
@@ -142,9 +144,9 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 					Description: "" +
 						"This command either reads a file from the filesystem and writes the " +
 						"encoded and encrypted version in the store or it decrypts and decodes " +
-						"a secret and write the result to a file. Either source or destination " +
+						"a secret and writes the result to a file. Either source or destination " +
 						"must be a file and the other one a secret. If you want the source to " +
-						"be securely removed after copying use 'gopass binary move'",
+						"be securely removed after copying, use 'gopass binary move'",
 					Before:  func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
 					Aliases: []string{"cp"},
 					Action: func(c *cli.Context) error {
@@ -152,9 +154,10 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 					},
 					BashComplete: func(c *cli.Context) { action.Complete(ctx, c) },
 					Flags: []cli.Flag{
-						cli.BoolFlag{
-							Name:  "force, f",
-							Usage: "Force to move the secret and overwrite existing one",
+						&cli.BoolFlag{
+							Name:    "force",
+							Aliases: []string{"f"},
+							Usage:   "Force to move the secret and overwrite existing one",
 						},
 					},
 				},
@@ -164,7 +167,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 					Description: "" +
 						"This command either reads a file from the filesystem and writes the " +
 						"encoded and encrypted version in the store or it decrypts and decodes " +
-						"a secret and write the result to a file. Either source or destination " +
+						"a secret and writes the result to a file. Either source or destination " +
 						"must be a file and the other one a secret. The source will be wiped " +
 						"from disk or from the store after it has been copied successfully " +
 						"and validated. If you don't want the source to be removed use " +
@@ -176,9 +179,10 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 					},
 					BashComplete: func(c *cli.Context) { action.Complete(ctx, c) },
 					Flags: []cli.Flag{
-						cli.BoolFlag{
-							Name:  "force, f",
-							Usage: "Force to move the secret and overwrite existing one",
+						&cli.BoolFlag{
+							Name:    "force",
+							Aliases: []string{"f"},
+							Usage:   "Force to move the secret and overwrite existing one",
 						},
 					},
 				},
@@ -190,26 +194,26 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Description: "" +
 				"This command clones an existing password store from a git remote to " +
 				"a local password store. Can be either used to initialize a new root store " +
-				"or to add a new mounted sub store." +
+				"or to add a new mounted sub-store." +
 				"" +
 				"Needs at least one argument (git URL) to clone from. " +
-				"Accepts as second argument (mount location) to clone and mount a sub store, e.g. " +
-				"gopass clone git@example.com/store.git foo/bar",
+				"Accepts a second argument (mount location) to clone and mount a sub-store, e.g. " +
+				"'gopass clone git@example.com/store.git foo/bar'",
 			Action: func(c *cli.Context) error {
 				return action.Clone(withGlobalFlags(ctx, c), c)
 			},
 			Flags: []cli.Flag{
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "path",
 					Usage: "Path to clone the repo to",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "crypto",
 					Usage: "Select crypto backend (gpg, gpgcli, plain, xc)",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "sync",
-					Usage: "Select sync backend (git, gitcli, gogit, noop)",
+					Usage: "Select sync backend (git, gitcli, noop)",
 				},
 			},
 		},
@@ -218,7 +222,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Usage: "Bash and ZSH completion",
 			Description: "" +
 				"Source the output of this command with bash or zsh to get auto completion",
-			Subcommands: []cli.Command{{
+			Subcommands: []*cli.Command{{
 				Name:   "bash",
 				Usage:  "Source for auto completion in bash",
 				Action: action.CompletionBash,
@@ -246,13 +250,16 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Name:  "config",
 			Usage: "Edit configuration",
 			Description: "" +
-				"This command allows for easy editing of the configuration",
+				"This command allows for easy printing and editing of the configuration. " +
+				"Without argument, the entire config is printed. " +
+				"With a single argument, a single key can be printed. " +
+				"With two arguments a setting specified by key can be set to value.",
 			Action: func(c *cli.Context) error {
 				return action.Config(withGlobalFlags(ctx, c), c)
 			},
 			BashComplete: action.ConfigComplete,
 			Flags: []cli.Flag{
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "store",
 					Usage: "Set value to substore config",
 				},
@@ -264,17 +271,20 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Usage:   "Copy secrets from one location to another",
 			Description: "" +
 				"This command copies an existing secret in the store to another location. " +
-				"It will also handle copying secrets to different sub stores. " +
-				"If the destination is directory it will automatically copy recursively.",
+				"This also works across different sub-stores. If the source is a directory it will " +
+				"automatically copy recursively. In that case, the source directory is re-created " +
+				"at the destination if no trailing slash is found, otherwise the contents are " +
+				"flattened (similar to rsync).",
 			Before: func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
 			Action: func(c *cli.Context) error {
 				return action.Copy(withGlobalFlags(ctx, c), c)
 			},
 			BashComplete: func(c *cli.Context) { action.Complete(ctx, c) },
 			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "force, f",
-					Usage: "Force to copy the secret and overwrite existing one",
+				&cli.BoolFlag{
+					Name:    "force",
+					Aliases: []string{"f"},
+					Usage:   "Force to copy the secret and overwrite existing one",
 				},
 			},
 		},
@@ -289,9 +299,10 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 				return create.Create(withGlobalFlags(ctx, c), c, action.Store)
 			},
 			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "store, s",
-					Usage: "Which store to use",
+				&cli.StringFlag{
+					Name:    "store",
+					Aliases: []string{"s"},
+					Usage:   "Which store to use",
 				},
 			},
 		},
@@ -308,19 +319,21 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			},
 			BashComplete: func(c *cli.Context) { action.Complete(ctx, c) },
 			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "recursive, r",
-					Usage: "f",
+				&cli.BoolFlag{
+					Name:    "recursive",
+					Aliases: []string{"r"},
+					Usage:   "Recursive delete files and folders",
 				},
-				cli.BoolFlag{
-					Name:  "force, f",
-					Usage: "Force to delete the secret",
+				&cli.BoolFlag{
+					Name:    "force",
+					Aliases: []string{"f"},
+					Usage:   "Force to delete the secret",
 				},
 			},
 		},
 		{
 			Name:  "edit",
-			Usage: "Edit new or existing secret",
+			Usage: "Edit new or existing secrets",
 			Description: "" +
 				"Use this command to insert a new secret or edit an existing one using " +
 				"your $EDITOR. It will attempt to create a secure temporary directory " +
@@ -334,9 +347,15 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Aliases:      []string{"set"},
 			BashComplete: func(c *cli.Context) { action.Complete(ctx, c) },
 			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "editor, e",
-					Usage: "Use this editor binary",
+				&cli.StringFlag{
+					Name:    "editor",
+					Aliases: []string{"e"},
+					Usage:   "Use this editor binary",
+				},
+				&cli.BoolFlag{
+					Name:    "create",
+					Aliases: []string{"c"},
+					Usage:   "Create a new secret if none found",
 				},
 			},
 		},
@@ -345,9 +364,9 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Usage: "Search for secrets",
 			Description: "" +
 				"This command will first attempt a simple pattern match on the name of the " +
-				"secret. If that yields no results it will trigger a fuzzy search. " +
-				"If there is an exact match it will be shown diretly, if there are " +
-				"multiple matches a selection will be shown.",
+				"secret. If that yields no results, it will trigger a fuzzy search. " +
+				"If there is an exact match it will be shown directly; if there are " +
+				"multiple matches, a selection will be shown.",
 			Before: func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
 			Action: func(c *cli.Context) error {
 				return action.Find(withGlobalFlags(ctxutil.WithFuzzySearch(ctx, false), c), c)
@@ -355,9 +374,15 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Aliases:      []string{"search"},
 			BashComplete: func(c *cli.Context) { action.Complete(ctx, c) },
 			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "clip, c",
-					Usage: "Copy the password into the clipboard",
+				&cli.BoolFlag{
+					Name:    "clip",
+					Aliases: []string{"c"},
+					Usage:   "Copy the password into the clipboard",
+				},
+				&cli.BoolFlag{
+					Name:    "force",
+					Aliases: []string{"f"},
+					Usage:   "In the case of an exact match, display the password even if safecontent is enabled",
 				},
 			},
 		},
@@ -365,7 +390,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Name:  "fsck",
 			Usage: "Check store integrity",
 			Description: "" +
-				"Check the integrity of the given sub store or all stores if none are specified. " +
+				"Check the integrity of the given sub-store or all stores if none are specified. " +
 				"Will automatically fix all issues found.",
 			Before: func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
 			Action: func(c *cli.Context) error {
@@ -377,9 +402,9 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Name:  "generate",
 			Usage: "Generate a new password",
 			Description: "" +
-				"Generate a new password of the specified length with optionally no symbols. " +
+				"Generate a new password of the specified length, optionally with no symbols. " +
 				"Alternatively, a xkcd style password can be generated (https://xkcd.com/936/). " +
-				"Optionally put it on the clipboard and clear board after 45 seconds. " +
+				"Optionally put it on the clipboard and clear clipboard after 45 seconds. " +
 				"Prompt before overwriting existing password unless forced. " +
 				"It will replace only the first line of an existing file with a new password.",
 			Before: func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
@@ -388,57 +413,70 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			},
 			BashComplete: func(c *cli.Context) { action.CompleteGenerate(ctx, c) },
 			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "clip, c",
-					Usage: "Copy the generated password to the clipboard",
+				&cli.BoolFlag{
+					Name:    "clip",
+					Aliases: []string{"c"},
+					Usage:   "Copy the generated password to the clipboard",
+					Value:   true,
 				},
-				cli.BoolFlag{
-					Name:  "print, p",
-					Usage: "Print the generated password to the terminal",
+				&cli.BoolFlag{
+					Name:    "print",
+					Aliases: []string{"p"},
+					Usage:   "Print the generated password to the terminal",
 				},
-				cli.BoolFlag{
-					Name:  "force, f",
-					Usage: "Force to overwrite existing password",
+				&cli.BoolFlag{
+					Name:    "force",
+					Aliases: []string{"f"},
+					Usage:   "Force to overwrite existing password",
 				},
-				cli.BoolFlag{
-					Name:  "edit, e",
-					Usage: "Open secret for editing after generating a password",
+				&cli.BoolFlag{
+					Name:    "edit",
+					Aliases: []string{"e"},
+					Usage:   "Open secret for editing after generating a password",
 				},
-				cli.BoolFlag{
-					Name:  "symbols, s",
-					Usage: "Use symbols in the password",
+				&cli.BoolFlag{
+					Name:    "symbols",
+					Aliases: []string{"s"},
+					Usage:   "Use symbols in the password",
 				},
-				cli.BoolFlag{
-					Name:  "xkcd, x",
-					Usage: "Use multiple random english words combined to a password. If no separator is specified, the words are combined without spaces/separator and the first character of words is capitalised",
+				&cli.BoolFlag{
+					Name:  "strict",
+					Usage: "Require strict character class rules",
 				},
-				cli.StringFlag{
-					Name:  "xkcdsep, xs",
-					Usage: "Word separator for generated xkcd style password. Implies -xkcd",
-					Value: "",
+				&cli.BoolFlag{
+					Name:    "xkcd",
+					Aliases: []string{"x"},
+					Usage:   "Use multiple random english words combined to a password. By default, space is used as separator and all words are lowercase",
 				},
-				cli.StringFlag{
-					Name:  "xkcdlang, xl",
-					Usage: "Language to generate password from, currently de (german) and en (english, default) are supported",
-					Value: "en",
+				&cli.StringFlag{
+					Name:    "xkcdsep",
+					Aliases: []string{"xs"},
+					Usage:   "Word separator for generated xkcd style password. If no separator is specified, the words are combined without spaces/separator and the first character of words is capitalised. This flag implies -xkcd",
+					Value:   "",
+				},
+				&cli.StringFlag{
+					Name:    "xkcdlang",
+					Aliases: []string{"xl"},
+					Usage:   "Language to generate password from, currently de (german) and en (english, default) are supported",
+					Value:   "en",
 				},
 			},
 		},
 		{
 			Name:  "git-credential",
-			Usage: "Use '!gopass git-credential $@' as git's credential.helper",
+			Usage: `Use "!gopass git-credential $@" as git's credential.helper`,
 			Description: "" +
 				"This command allows you to cache your git-credentials with gopass." +
-				"Activate by using `git config --global credential.helper '!gopass git-credential $@'`",
-			Before: func(c *cli.Context) error {
-				return action.GitCredentialBefore(ctxutil.WithInteractive(withGlobalFlags(ctx, c), false), c)
-			},
-			Subcommands: []cli.Command{
+				"Activate by using `git config --global credential.helper \"!gopass git-credential $@\"`",
+			Subcommands: []*cli.Command{
 				{
 					Name:   "get",
 					Hidden: true,
 					Action: func(c *cli.Context) error {
 						return action.GitCredentialGet(withGlobalFlags(ctx, c), c)
+					},
+					Before: func(c *cli.Context) error {
+						return action.GitCredentialBefore(ctxutil.WithInteractive(withGlobalFlags(ctx, c), false), c)
 					},
 				},
 				{
@@ -447,6 +485,9 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 					Action: func(c *cli.Context) error {
 						return action.GitCredentialStore(withGlobalFlags(ctx, c), c)
 					},
+					Before: func(c *cli.Context) error {
+						return action.GitCredentialBefore(ctxutil.WithInteractive(withGlobalFlags(ctx, c), false), c)
+					},
 				},
 				{
 					Name:   "erase",
@@ -454,15 +495,39 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 					Action: func(c *cli.Context) error {
 						return action.GitCredentialErase(withGlobalFlags(ctx, c), c)
 					},
+					Before: func(c *cli.Context) error {
+						return action.GitCredentialBefore(ctxutil.WithInteractive(withGlobalFlags(ctx, c), false), c)
+					},
+				},
+				{
+					Name:        "configure",
+					Description: "This command configures gopass as git's credential.helper",
+					Action: func(c *cli.Context) error {
+						return action.GitCredentialConfigure(withGlobalFlags(ctx, c), c)
+					},
+					Flags: []cli.Flag{
+						&cli.BoolFlag{
+							Name:  "global",
+							Usage: "Install for current user",
+						},
+						&cli.BoolFlag{
+							Name:  "local",
+							Usage: "Install for current repository only",
+						},
+						&cli.BoolFlag{
+							Name:  "system",
+							Usage: "Install for all users, requires superuser rights",
+						},
+					},
 				},
 			},
 		},
 		{
 			Name:        "jsonapi",
-			Usage:       "Run gopass as jsonapi e.g. for browser plugins",
+			Usage:       "Run and configure gopass as jsonapi e.g. for browser plugins",
 			Description: "Setup and run gopass as native messaging hosts, e.g. for browser plugins.",
-			Hidden:      true,
-			Subcommands: []cli.Command{
+			Hidden:      false,
+			Subcommands: []*cli.Command{
 				{
 					Name:        "listen",
 					Usage:       "Listen and respond to messages via stdin/stdout",
@@ -480,33 +545,34 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return action.SetupNativeMessaging(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "browser",
 							Usage: "One of 'chrome' and 'firefox'",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "path",
 							Usage: "Path to install 'gopass_wrapper.sh' to",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "manifest-path",
 							Usage: "Path to install 'com.justwatch.gopass.json' to",
 						},
-						cli.BoolFlag{
+						&cli.BoolFlag{
 							Name:  "global",
 							Usage: "Install for all users, requires superuser rights",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "libpath",
 							Usage: "Library path for global installation on linux. Default is /usr/lib",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "gopass-path",
 							Usage: "Path to gopass binary. Default is auto detected",
 						},
-						cli.BoolTFlag{
+						&cli.BoolFlag{
 							Name:  "print",
 							Usage: "Print installation summary before creating any files",
+							Value: true,
 						},
 					},
 				},
@@ -514,34 +580,41 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 		},
 		{
 			Name:    "otp",
-			Usage:   "Generate time or hmac based tokens",
+			Usage:   "Generate time- or hmac-based tokens",
 			Aliases: []string{"totp", "hotp"},
 			Description: "" +
-				"Tries to parse an OTP URL (otpauth://). " +
-				"URL can be TOTP or HOTP.",
+				"Tries to parse an OTP URL (otpauth://). URL can be TOTP or HOTP. " +
+				"The URL can be provided on its own line or on a key value line with a key named 'totp'.",
 			Before: func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
 			Action: func(c *cli.Context) error {
 				return action.OTP(withGlobalFlags(ctx, c), c)
 			},
 			BashComplete: func(c *cli.Context) { action.Complete(ctx, c) },
 			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "clip, c",
-					Usage: "Copy the time based token into the clipboard",
+				&cli.BoolFlag{
+					Name:    "clip",
+					Aliases: []string{"c"},
+					Usage:   "Copy the time-based token into the clipboard",
 				},
-				cli.StringFlag{
-					Name:  "qr, q",
-					Usage: "Write QR code to `FILE`",
+				&cli.StringFlag{
+					Name:    "qr",
+					Aliases: []string{"q"},
+					Usage:   "Write QR code to FILE",
+				},
+				&cli.BoolFlag{
+					Name:    "password",
+					Aliases: []string{"o"},
+					Usage:   "Only display the token",
 				},
 			},
 		},
 		{
 			Name:  "git",
-			Usage: "Run any git command inside a password store",
+			Usage: "Run a git command inside a password store (init, remote, push, pull)",
 			Description: "" +
 				"If the password store is a git repository, execute a git command " +
 				"specified by git-command-args.",
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:        "init",
 					Usage:       "Init git repo",
@@ -551,26 +624,26 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return action.GitInit(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "store",
 							Usage: "Store to operate on",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "sign-key",
 							Usage: "GPG Key to sign commits",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "rcs",
-							Usage: "Select sync backend (git, gitcli, gogit, noop)",
+							Usage: "Select sync backend (git, gitcli, noop)",
 						},
 					},
 				},
 				{
 					Name:        "remote",
-					Usage:       "Mangage git remotes",
+					Usage:       "Manage git remotes",
 					Description: "These subcommands can be used to manage git remotes",
 					Before:      func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
-					Subcommands: []cli.Command{
+					Subcommands: []*cli.Command{
 						{
 							Name:        "add",
 							Usage:       "Add git remote",
@@ -580,7 +653,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 								return action.GitAddRemote(withGlobalFlags(ctx, c), c)
 							},
 							Flags: []cli.Flag{
-								cli.StringFlag{
+								&cli.StringFlag{
 									Name:  "store",
 									Usage: "Store to operate on",
 								},
@@ -595,7 +668,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 								return action.GitRemoveRemote(withGlobalFlags(ctx, c), c)
 							},
 							Flags: []cli.Flag{
-								cli.StringFlag{
+								&cli.StringFlag{
 									Name:  "store",
 									Usage: "Store to operate on",
 								},
@@ -612,7 +685,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return action.GitPush(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "store",
 							Usage: "Store to operate on",
 						},
@@ -627,7 +700,22 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return action.GitPull(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
+							Name:  "store",
+							Usage: "Store to operate on",
+						},
+					},
+				},
+				{
+					Name:        "status",
+					Usage:       "RCS status",
+					Description: "Show the RCS status",
+					Before:      func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
+					Action: func(c *cli.Context) error {
+						return action.GitStatus(withGlobalFlags(ctx, c), c)
+					},
+					Flags: []cli.Flag{
+						&cli.StringFlag{
 							Name:  "store",
 							Usage: "Store to operate on",
 						},
@@ -658,9 +746,10 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			},
 			BashComplete: func(c *cli.Context) { action.Complete(ctx, c) },
 			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "password, p",
-					Usage: "Include passwords in output",
+				&cli.BoolFlag{
+					Name:    "password",
+					Aliases: []string{"p"},
+					Usage:   "Include passwords in output",
 				},
 			},
 		},
@@ -673,23 +762,25 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 				return action.Init(withGlobalFlags(ctx, c), c)
 			},
 			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "path, p",
-					Usage: "Set the sub store path to operate on",
+				&cli.StringFlag{
+					Name:    "path",
+					Aliases: []string{"p"},
+					Usage:   "Set the sub-store path to operate on",
 				},
-				cli.StringFlag{
-					Name:  "store, s",
-					Usage: "Set the name of the sub store",
+				&cli.StringFlag{
+					Name:    "store",
+					Aliases: []string{"s"},
+					Usage:   "Set the name of the sub-store",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "crypto",
 					Usage: "Select crypto backend (gpg, gpgcli, plain, xc)",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "rcs",
-					Usage: "Select sync backend (git, gitcli, gogit, noop)",
+					Usage: "Select sync backend (git, gitcli, noop)",
 				},
-				cli.BoolFlag{
+				&cli.BoolFlag{
 					Name:   "nogit",
 					Usage:  "(DEPRECATED): Select noop RCS backend. Use '--rcs noop' instead",
 					Hidden: true,
@@ -709,21 +800,25 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			},
 			BashComplete: func(c *cli.Context) { action.Complete(ctx, c) },
 			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "echo, e",
-					Usage: "Display secret while typing",
+				&cli.BoolFlag{
+					Name:    "echo",
+					Aliases: []string{"e"},
+					Usage:   "Display secret while typing",
 				},
-				cli.BoolFlag{
-					Name:  "multiline, m",
-					Usage: "Insert using $EDITOR",
+				&cli.BoolFlag{
+					Name:    "multiline",
+					Aliases: []string{"m"},
+					Usage:   "Insert using $EDITOR",
 				},
-				cli.BoolFlag{
-					Name:  "force, f",
-					Usage: "Overwrite any existing secret and do not prompt to confirm recipients",
+				&cli.BoolFlag{
+					Name:    "force",
+					Aliases: []string{"f"},
+					Usage:   "Overwrite any existing secret and do not prompt to confirm recipients",
 				},
-				cli.BoolFlag{
-					Name:  "append, a",
-					Usage: "Append to any existing data",
+				&cli.BoolFlag{
+					Name:    "append",
+					Aliases: []string{"a"},
+					Usage:   "Append to any existing data",
 				},
 			},
 		},
@@ -740,17 +835,25 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			},
 			BashComplete: func(c *cli.Context) { action.Complete(ctx, c) },
 			Flags: []cli.Flag{
-				cli.IntFlag{
-					Name:  "limit, l",
-					Usage: "Max tree depth",
+				&cli.IntFlag{
+					Name:    "limit",
+					Aliases: []string{"l"},
+					Usage:   "Max tree depth",
 				},
-				cli.BoolFlag{
-					Name:  "flat, f",
-					Usage: "Print flat list",
+				&cli.BoolFlag{
+					Name:    "flat",
+					Aliases: []string{"f"},
+					Usage:   "Print flat list",
 				},
-				cli.BoolFlag{
-					Name:  "strip-prefix, s",
-					Usage: "Strip prefix from filtered entries",
+				&cli.BoolFlag{
+					Name:    "folders",
+					Aliases: []string{"fo"},
+					Usage:   "Print flat list of folders",
+				},
+				&cli.BoolFlag{
+					Name:    "strip-prefix",
+					Aliases: []string{"s"},
+					Usage:   "Strip prefix from filtered entries",
 				},
 			},
 		},
@@ -759,17 +862,20 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Aliases: []string{"mv"},
 			Usage:   "Move secrets from one location to another",
 			Description: "" +
-				"This command moves a secret from one path to another. This works even " +
-				"across different sub stores.",
+				"This command moves a secret from one path to another. This also works " +
+				"across different sub-stores. If the source is a directory, the source directory " +
+				"is re-created at the destination if no trailing slash is found, otherwise the " +
+				"contents are flattened (similar to rsync).",
 			Before: func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
 			Action: func(c *cli.Context) error {
 				return action.Move(withGlobalFlags(ctx, c), c)
 			},
 			BashComplete: func(c *cli.Context) { action.Complete(ctx, c) },
 			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "force, f",
-					Usage: "Force to move the secret and overwrite existing one",
+				&cli.BoolFlag{
+					Name:    "force",
+					Aliases: []string{"f"},
+					Usage:   "Force to move the secret and overwrite existing one",
 				},
 			},
 		},
@@ -783,7 +889,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Action: func(c *cli.Context) error {
 				return action.MountsPrint(withGlobalFlags(ctx, c), c)
 			},
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:    "add",
 					Aliases: []string{"mount"},
@@ -796,9 +902,10 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return action.MountAdd(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
-							Name:  "init, i",
-							Usage: "Init the store with the given recipient key",
+						&cli.StringFlag{
+							Name:    "init",
+							Aliases: []string{"i"},
+							Usage:   "Init the store with the given recipient key",
 						},
 					},
 				},
@@ -827,27 +934,27 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Action: func(c *cli.Context) error {
 				return action.RecipientsPrint(withGlobalFlags(ctx, c), c)
 			},
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:    "add",
 					Aliases: []string{"authorize"},
 					Usage:   "Add any number of Recipients to any store",
 					Description: "" +
 						"This command adds any number of recipients to any existing store. " +
-						"If none are given it will display a list of useable public keys. " +
-						"After adding the recipient to the list it will reencrypt the whole " +
-						"affected store to make sure the recipient has access to any existing " +
-						"secret.",
+						"If none are given it will display a list of usable public keys. " +
+						"After adding the recipient to the list it will re-encrypt the whole " +
+						"affected store to make sure the recipient has access to all existing " +
+						"secrets.",
 					Before: func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
 					Action: func(c *cli.Context) error {
 						return action.RecipientsAdd(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "store",
 							Usage: "Store to operate on",
 						},
-						cli.BoolFlag{
+						&cli.BoolFlag{
 							Name:  "force",
 							Usage: "Force adding non-existing keys",
 						},
@@ -859,12 +966,12 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 					Usage:   "Remove any number of Recipients from any store",
 					Description: "" +
 						"This command removes any number of recipients from any existing store. " +
-						"If no recipients are provided it will show a list of existing recipients " +
-						"to choose from. It will refuse to remove the current users key from the " +
-						"store to avoid loosing access. After removing the keys it will re-encrypt " +
+						"If no recipients are provided, it will show a list of existing recipients " +
+						"to choose from. It will refuse to remove the current user's key from the " +
+						"store to avoid losing access. After removing the keys it will re-encrypt " +
 						"all existing secrets. Please note that the removed recipients will still " +
 						"be able to decrypt old revisions of the password store and any local " +
-						"copies they might have. The only way to reliably remove a recipients is to " +
+						"copies they might have. The only way to reliably remove a recipient is to " +
 						"rotate all existing secrets.",
 					Before: func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
 					Action: func(c *cli.Context) error {
@@ -874,11 +981,11 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						action.RecipientsComplete(ctx, c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name:  "store",
 							Usage: "Store to operate on",
 						},
-						cli.BoolFlag{
+						&cli.BoolFlag{
 							Name:  "force",
 							Usage: "Force adding non-existing keys",
 						},
@@ -889,7 +996,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 					Usage: "Recompute the saved recipient list checksums",
 					Description: "" +
 						"This command will recompute the saved recipient checksum" +
-						"a save them to the config.",
+						"and save them to the config.",
 					Before: func(c *cli.Context) error { return action.Initialized(withGlobalFlags(ctx, c), c) },
 					Action: func(c *cli.Context) error {
 						return action.RecipientsUpdate(withGlobalFlags(ctx, c), c)
@@ -909,33 +1016,33 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 				return action.InitOnboarding(withGlobalFlags(ctx, c), c)
 			},
 			Flags: []cli.Flag{
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "remote",
 					Usage: "URL to a git remote, will attempt to join this team",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "alias",
 					Usage: "Local mount point for the given remote",
 				},
-				cli.BoolFlag{
+				&cli.BoolFlag{
 					Name:  "create",
 					Usage: "Create a new team (default: false, i.e. join an existing team)",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "name",
 					Usage: "Firstname and Lastname for unattended GPG key generation",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "email",
 					Usage: "EMail for unattended GPG key generation",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "crypto",
 					Usage: "Select crypto backend (gpg, gpgcli, plain, xc)",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "rcs",
-					Usage: "Select sync backend (git, gitcli, gogit, noop)",
+					Usage: "Select sync backend (git, gitcli, noop)",
 				},
 			},
 		},
@@ -951,27 +1058,35 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			},
 			BashComplete: func(c *cli.Context) { action.Complete(ctx, c) },
 			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "clip, c",
-					Usage: "Copy the first line of the secret into the clipboard",
+				&cli.BoolFlag{
+					Name:    "clip",
+					Aliases: []string{"c"},
+					Usage:   "Copy the first line of the secret into the clipboard",
 				},
-				cli.BoolFlag{
+				&cli.BoolFlag{
+					Name:  "alsoclip, C",
+					Usage: "Copy the first line of the secret and show everything",
+				},
+				&cli.BoolFlag{
 					Name:  "qr",
 					Usage: "Print the first line of the secret as QR Code",
 				},
-				cli.BoolFlag{
-					Name:  "force, f",
-					Usage: "Display the password even if safecontent is enabled",
+				&cli.BoolFlag{
+					Name:    "force",
+					Aliases: []string{"f"},
+					Usage:   "Display the password even if safecontent is enabled",
 				},
-				cli.BoolFlag{
-					Name:  "password, o",
-					Usage: "Display only the password",
+				&cli.BoolFlag{
+					Name:    "password",
+					Aliases: []string{"o"},
+					Usage:   "Display only the password",
 				},
-				cli.BoolFlag{
-					Name:  "sync, s",
-					Usage: "Sync before attempting to display the secret",
+				&cli.BoolFlag{
+					Name:    "sync",
+					Aliases: []string{"s"},
+					Usage:   "Sync before attempting to display the secret",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "revision",
 					Usage: "Show a past revision",
 				},
@@ -989,9 +1104,10 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 
 			},
 			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "store, s",
-					Usage: "Select the store to sync",
+				&cli.StringFlag{
+					Name:    "store",
+					Aliases: []string{"s"},
+					Usage:   "Select the store to sync",
 				},
 			},
 		},
@@ -1005,7 +1121,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Action: func(c *cli.Context) error {
 				return action.TemplatesPrint(withGlobalFlags(ctx, c), c)
 			},
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name:        "show",
 					Usage:       "Show a secret template.",
@@ -1050,11 +1166,11 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			},
 			Hidden: true,
 			Flags: []cli.Flag{
-				cli.IntFlag{
+				&cli.IntFlag{
 					Name:  "timeout",
 					Usage: "Time to wait",
 				},
-				cli.BoolFlag{
+				&cli.BoolFlag{
 					Name:  "force",
 					Usage: "Clear clipboard even if checksum mismatches",
 				},
@@ -1070,7 +1186,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 				return action.Update(withGlobalFlags(ctx, c), c)
 			},
 			Flags: []cli.Flag{
-				cli.BoolFlag{
+				&cli.BoolFlag{
 					Name:  "pre",
 					Usage: "Update to prereleases",
 				},
@@ -1093,7 +1209,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 			Description: "" +
 				"These subcommands are used to control and test the experimental crypto" +
 				"implementation.",
-			Subcommands: []cli.Command{
+			Subcommands: []*cli.Command{
 				{
 					Name: "list-private-keys",
 					Action: func(c *cli.Context) error {
@@ -1118,10 +1234,10 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return xc.ExportPublicKey(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name: "id",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name: "file",
 						},
 					},
@@ -1132,10 +1248,10 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return xc.ImportPublicKey(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name: "id",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name: "file",
 						},
 					},
@@ -1146,10 +1262,10 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return xc.ExportPrivateKey(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name: "id",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name: "file",
 						},
 					},
@@ -1160,10 +1276,10 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return xc.ImportPrivateKey(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name: "id",
 						},
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name: "file",
 						},
 					},
@@ -1174,7 +1290,7 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return xc.RemoveKey(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name: "id",
 						},
 					},
@@ -1185,13 +1301,13 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return xc.EncryptFile(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name: "file",
 						},
-						cli.StringSliceFlag{
+						&cli.StringSliceFlag{
 							Name: "recipients",
 						},
-						cli.BoolFlag{
+						&cli.BoolFlag{
 							Name: "stream",
 						},
 					},
@@ -1202,10 +1318,10 @@ func getCommands(ctx context.Context, action *ap.Action, app *cli.App) []cli.Com
 						return xc.DecryptFile(withGlobalFlags(ctx, c), c)
 					},
 					Flags: []cli.Flag{
-						cli.StringFlag{
+						&cli.StringFlag{
 							Name: "file",
 						},
-						cli.BoolFlag{
+						&cli.BoolFlag{
 							Name: "stream",
 						},
 					},

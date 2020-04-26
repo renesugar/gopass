@@ -2,11 +2,9 @@ package sub
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/gopasspw/gopass/pkg/backend"
-	gitcli "github.com/gopasspw/gopass/pkg/backend/rcs/git/cli"
-	"github.com/gopasspw/gopass/pkg/backend/rcs/git/gogit"
+	_ "github.com/gopasspw/gopass/pkg/backend/rcs" // register RCS backends
 	"github.com/gopasspw/gopass/pkg/out"
 	"github.com/gopasspw/gopass/pkg/store"
 	"github.com/gopasspw/gopass/pkg/store/secret"
@@ -21,28 +19,12 @@ func (s *Store) RCS() backend.RCS {
 
 // GitInit initializes the the git repo in the store
 func (s *Store) GitInit(ctx context.Context, un, ue string) error {
-	switch backend.GetRCSBackend(ctx) {
-	case backend.GoGit:
-		out.Cyan(ctx, "WARNING: Using experimental sync backend 'go-git'")
-		git, err := gogit.Init(ctx, s.url.Path)
-		if err != nil {
-			return errors.Wrapf(err, "failed to init git: %s", err)
-		}
-		s.rcs = git
-		return nil
-	case backend.GitCLI:
-		git, err := gitcli.Init(ctx, s.url.Path, un, ue)
-		if err != nil {
-			return errors.Wrapf(err, "failed to init git: %s", err)
-		}
-		s.rcs = git
-		return nil
-	case backend.Noop:
-		out.Cyan(ctx, "WARNING: Initializing with no-op (mock) git backend")
-		return nil
-	default:
-		return fmt.Errorf("unknown Sync Backend: %d", backend.GetRCSBackend(ctx))
+	rcs, err := backend.InitRCS(ctx, backend.GetRCSBackend(ctx), s.url.Path, un, ue)
+	if err != nil {
+		return err
 	}
+	s.rcs = rcs
+	return nil
 }
 
 // ListRevisions will list all revisions for a secret
@@ -70,4 +52,14 @@ func (s *Store) GetRevision(ctx context.Context, name, revision string) (store.S
 		out.Debug(ctx, "Failed to parse YAML: %s", err)
 	}
 	return sec, nil
+}
+
+// GitStatus shows the git status output
+func (s *Store) GitStatus(ctx context.Context, _ string) error {
+	buf, err := s.rcs.Status(ctx)
+	if err != nil {
+		return err
+	}
+	out.Print(ctx, string(buf))
+	return nil
 }

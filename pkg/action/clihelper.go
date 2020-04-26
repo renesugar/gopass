@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/gopasspw/gopass/pkg/cui"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // ConfirmRecipients asks the user to confirm a given set of recipients
@@ -23,10 +23,10 @@ func (a argList) Get(n int) string {
 }
 
 func parseArgs(c *cli.Context) (argList, map[string]string) {
-	args := make(argList, 0, len(c.Args()))
-	kvps := make(map[string]string, len(c.Args()))
+	args := make(argList, 0, c.Args().Len())
+	kvps := make(map[string]string, c.Args().Len())
 OUTER:
-	for _, arg := range c.Args() {
+	for _, arg := range c.Args().Slice() {
 		for _, sep := range []string{":", "="} {
 			if !strings.Contains(arg, sep) {
 				continue
@@ -37,7 +37,7 @@ OUTER:
 				continue OUTER
 			}
 			key := p[0]
-			kvps[key] = p[1]
+			kvps[key] = strings.Join(p[1:], ":")
 			continue OUTER
 		}
 		args = append(args, arg)

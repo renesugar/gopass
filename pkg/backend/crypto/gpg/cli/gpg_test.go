@@ -2,9 +2,11 @@ package cli
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGPG(t *testing.T) {
@@ -16,7 +18,7 @@ func TestGPG(t *testing.T) {
 	assert.Equal(t, "", g.Binary())
 
 	g, err = New(ctx, Config{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, "", g.Binary())
 
 	_, err = g.ListPublicKeyIDs(ctx)
@@ -35,6 +37,9 @@ func TestGPG(t *testing.T) {
 }
 
 func TestDetectBinaryCandidates(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	bins, err := detectBinaryCandidates("foobar")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"gpg2", "gpg1", "gpg", "foobar"}, bins)

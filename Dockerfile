@@ -1,11 +1,11 @@
-FROM golang:1.10-alpine AS builder
+FROM golang:1.12-alpine AS builder
 
 RUN apk add -U make gcc musl-dev ncurses git
 
 ADD .   /go/src/github.com/gopasspw/gopass
 WORKDIR /go/src/github.com/gopasspw/gopass
 
-RUN TERM=vt100 make install
+RUN CGO_ENABLED=0 TERM=vt100 make install
 
 FROM alpine:3.7
 RUN apk add -U git gnupg

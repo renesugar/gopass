@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -14,6 +15,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConfigs(t *testing.T) {
@@ -159,17 +161,20 @@ func TestLoad(t *testing.T) {
 	assert.Equal(t, backend.FromPath(filepath.Join(td, ".password-store")).String(), cfg.Root.Path.String())
 	assert.Equal(t, backend.GPGCLI, cfg.Root.Path.Crypto)
 
-	assert.NoError(t, ioutil.WriteFile(gcfg, []byte(testConfig), 0600))
+	require.NoError(t, ioutil.WriteFile(gcfg, []byte(testConfig), 0600))
 	cfg = Load()
 	assert.Equal(t, true, cfg.Root.SafeContent)
 }
 
 func TestLoadError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	gcfg := filepath.Join(os.TempDir(), ".gopass-err.yml")
 	assert.NoError(t, os.Setenv("GOPASS_CONFIG", gcfg))
 
 	_ = os.Remove(gcfg)
-	assert.NoError(t, ioutil.WriteFile(gcfg, []byte(testConfig), 0000))
+	require.NoError(t, ioutil.WriteFile(gcfg, []byte(testConfig), 0000))
 
 	capture(t, func() error {
 		_, err := load(gcfg)
@@ -193,7 +198,7 @@ func TestDecodeError(t *testing.T) {
 	assert.NoError(t, os.Setenv("GOPASS_CONFIG", gcfg))
 
 	_ = os.Remove(gcfg)
-	assert.NoError(t, ioutil.WriteFile(gcfg, []byte(testConfig+"\nfoobar: zab\n"), 0600))
+	require.NoError(t, ioutil.WriteFile(gcfg, []byte(testConfig+"\nfoobar: zab\n"), 0600))
 
 	capture(t, func() error {
 		_, err := load(gcfg)
@@ -212,7 +217,7 @@ func capture(t *testing.T, fn func() error) string {
 	color.NoColor = true
 
 	r, w, err := os.Pipe()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	os.Stdout = w
 
 	done := make(chan string)

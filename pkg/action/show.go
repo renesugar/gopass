@@ -8,12 +8,13 @@ import (
 
 	"github.com/gopasspw/gopass/pkg/clipboard"
 	"github.com/gopasspw/gopass/pkg/ctxutil"
+	"github.com/gopasspw/gopass/pkg/notify"
 	"github.com/gopasspw/gopass/pkg/out"
 	"github.com/gopasspw/gopass/pkg/qrcon"
 	"github.com/gopasspw/gopass/pkg/store"
 
 	"github.com/pkg/errors"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -24,29 +25,32 @@ const (
 // Show the content of a secret file
 func (s *Action) Show(ctx context.Context, c *cli.Context) error {
 	name := c.Args().First()
-	key := c.Args().Get(1)
 
 	ctx = s.Store.WithConfig(ctx, name)
-	ctx = WithClip(ctx, c.Bool("clip"))
+	ctx = WithOnlyClip(ctx, c.Bool("clip"))
+	ctx = WithClip(ctx, c.Bool("alsoclip"))
 	ctx = WithForce(ctx, c.Bool("force"))
 	ctx = WithPrintQR(ctx, c.Bool("qr"))
 	ctx = WithPasswordOnly(ctx, c.Bool("password"))
 	ctx = WithRevision(ctx, c.String("revision"))
+	if key := c.Args().Get(1); key != "" {
+		ctx = WithKey(ctx, key)
+	}
 
 	if c.Bool("sync") {
 		if err := s.sync(out.WithHidden(ctx, true), c, s.Store.MountPoint(name)); err != nil {
-			out.Red(ctx, "Failed to sync %s: %s", name, err)
+			out.Error(ctx, "Failed to sync %s: %s", name, err)
 		}
 	}
 
-	if err := s.show(ctx, c, name, key, true); err != nil {
+	if err := s.show(ctx, c, name, true); err != nil {
 		return ExitError(ctx, ExitDecrypt, err, "%s", err)
 	}
 	return nil
 }
 
 // show displays the given secret/key
-func (s *Action) show(ctx context.Context, c *cli.Context, name, key string, recurse bool) error {
+func (s *Action) show(ctx context.Context, c *cli.Context, name string, recurse bool) error {
 	if name == "" {
 		return ExitError(ctx, ExitUsage, nil, "Usage: %s show [name]", s.Name)
 	}
@@ -64,7 +68,7 @@ func (s *Action) show(ctx context.Context, c *cli.Context, name, key string, rec
 	}
 
 	if HasRevision(ctx) {
-		return s.showHandleRevision(ctx, c, name, key, GetRevision(ctx))
+		return s.showHandleRevision(ctx, c, name, GetRevision(ctx))
 	}
 
 	sec, ctx, err := s.Store.GetContext(ctx, name)
@@ -72,22 +76,26 @@ func (s *Action) show(ctx context.Context, c *cli.Context, name, key string, rec
 		return s.showHandleError(ctx, c, name, recurse, err)
 	}
 
-	return s.showHandleOutput(ctx, name, key, sec)
+	return s.showHandleOutput(ctx, name, sec)
 }
 
 // showHandleRevision displays a single revision
-func (s *Action) showHandleRevision(ctx context.Context, c *cli.Context, name, key, revision string) error {
+func (s *Action) showHandleRevision(ctx context.Context, c *cli.Context, name, revision string) error {
 	sec, err := s.Store.GetRevision(ctx, name, revision)
 	if err != nil {
 		return s.showHandleError(ctx, c, name, false, err)
 	}
 
-	return s.showHandleOutput(ctx, name, key, sec)
+	return s.showHandleOutput(ctx, name, sec)
 }
 
 // showHandleOutput displays a secret
-func (s *Action) showHandleOutput(ctx context.Context, name, key string, sec store.Secret) error {
+func (s *Action) showHandleOutput(ctx context.Context, name string, sec store.Secret) error {
 	var content string
+	var key string
+	if HasKey(ctx) {
+		key = GetKey(ctx)
+	}
 
 	switch {
 	case key != "":
@@ -96,13 +104,24 @@ func (s *Action) showHandleOutput(ctx context.Context, name, key string, sec sto
 			return s.showHandleYAMLError(ctx, name, key, err)
 		}
 		if IsClip(ctx) {
-			return clipboard.CopyTo(ctx, name, []byte(val))
+			if err := clipboard.CopyTo(ctx, name, []byte(val)); err != nil {
+				return err
+			}
+			if IsOnlyClip(ctx) {
+				return nil
+			}
 		}
 		content = val
 	case IsPrintQR(ctx):
 		return s.showPrintQR(ctx, name, sec.Password())
 	case IsClip(ctx):
-		return clipboard.CopyTo(ctx, name, []byte(sec.Password()))
+		if err := clipboard.CopyTo(ctx, name, []byte(sec.Password())); err != nil {
+			return err
+		}
+		if IsOnlyClip(ctx) {
+			return nil
+		}
+		fallthrough
 	default:
 		switch {
 		case IsPasswordOnly(ctx):
@@ -111,7 +130,8 @@ func (s *Action) showHandleOutput(ctx context.Context, name, key string, sec sto
 			content = sec.Body()
 			if content == "" {
 				if ctxutil.IsAutoClip(ctx) {
-					out.Yellow(ctx, "No safe content to display, you can force display with show -f.\nCopying password instead.")
+					out.Yellow(ctx, "Info: %s.", store.ErrNoBody.Error())
+					out.Yellow(ctx, "Copying password instead.")
 					return clipboard.CopyTo(ctx, name, []byte(sec.Password()))
 				}
 				return ExitError(ctx, ExitNotFound, store.ErrNoBody, store.ErrNoBody.Error())
@@ -133,10 +153,19 @@ func (s *Action) showHandleOutput(ctx context.Context, name, key string, sec sto
 // showHandleError handles errors retrieving secrets
 func (s *Action) showHandleError(ctx context.Context, c *cli.Context, name string, recurse bool, err error) error {
 	if err != store.ErrNotFound || !recurse || !ctxutil.IsTerminal(ctx) {
+		if IsClip(ctx) {
+			_ = notify.Notify(ctx, "gopass - error", fmt.Sprintf("failed to retrieve secret '%s': %s", name, err))
+		}
 		return ExitError(ctx, ExitUnknown, err, "failed to retrieve secret '%s': %s", name, err)
+	}
+	if IsClip(ctx) {
+		_ = notify.Notify(ctx, "gopass - warning", fmt.Sprintf("Entry '%s' not found. Starting search...", name))
 	}
 	out.Yellow(ctx, "Entry '%s' not found. Starting search...", name)
 	if err := s.Find(ctx, c); err != nil {
+		if IsClip(ctx) {
+			_ = notify.Notify(ctx, "gopass - error", fmt.Sprintf("%s", err))
+		}
 		return ExitError(ctx, ExitNotFound, err, "%s", err)
 	}
 	os.Exit(ExitNotFound)

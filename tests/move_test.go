@@ -2,12 +2,16 @@ package tests
 
 import (
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMove(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	ts := newTester(t)
 	defer ts.teardown()
 
@@ -30,7 +34,7 @@ func TestMove(t *testing.T) {
 
 	ts.initSecrets("")
 
-	_, err = ts.run("move foo/ bar")
+	_, err = ts.run("move foo bar")
 	assert.NoError(t, err)
 
 	out, _ = ts.run("move foo/bar foo/baz")

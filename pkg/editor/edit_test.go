@@ -6,6 +6,7 @@ import (
 	"flag"
 	"os"
 	"os/exec"
+	"runtime"
 	"testing"
 
 	"github.com/gopasspw/gopass/pkg/ctxutil"
@@ -13,7 +14,8 @@ import (
 	"github.com/gopasspw/gopass/tests/gptest"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 )
 
 func TestEdit(t *testing.T) {
@@ -33,16 +35,19 @@ func TestEdit(t *testing.T) {
 }
 
 func TestEditor(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	u := gptest.NewUnitTester(t)
 	defer u.Remove()
 
 	ctx := context.Background()
 	touch, err := exec.LookPath("touch")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	want := "foobar"
 	out, err := Invoke(ctx, touch, []byte(want))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	if string(out) != want {
 		t.Errorf("'%s' != '%s'", string(out), want)
 	}
@@ -57,8 +62,8 @@ func TestGetEditor(t *testing.T) {
 		Name:  "editor",
 		Usage: "editor",
 	}
-	assert.NoError(t, sf.ApplyWithError(fs))
-	assert.NoError(t, fs.Parse([]string{"--editor", "fooed"}))
+	require.NoError(t, sf.Apply(fs))
+	require.NoError(t, fs.Parse([]string{"--editor", "fooed"}))
 	c := cli.NewContext(app, fs, nil)
 
 	assert.Equal(t, "fooed", Path(c))
@@ -79,6 +84,12 @@ func TestGetEditor(t *testing.T) {
 	// vi
 	op := os.Getenv("PATH")
 	assert.NoError(t, os.Setenv("PATH", "/tmp"))
-	assert.Equal(t, "vi", Path(c))
+	if runtime.GOOS == "windows" {
+		assert.Equal(t, "notepad.exe", Path(c))
+
+	} else {
+		assert.Equal(t, "vi", Path(c))
+
+	}
 	assert.NoError(t, os.Setenv("PATH", op))
 }

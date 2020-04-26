@@ -6,16 +6,15 @@ import (
 
 	"github.com/gopasspw/gopass/pkg/backend"
 	"github.com/gopasspw/gopass/pkg/backend/crypto/xc"
-	gitcli "github.com/gopasspw/gopass/pkg/backend/rcs/git/cli"
-	"github.com/gopasspw/gopass/pkg/backend/rcs/git/gogit"
 	"github.com/gopasspw/gopass/pkg/config"
+	"github.com/gopasspw/gopass/pkg/ctxutil"
 	"github.com/gopasspw/gopass/pkg/cui"
 	"github.com/gopasspw/gopass/pkg/fsutil"
 	"github.com/gopasspw/gopass/pkg/out"
 	"github.com/gopasspw/gopass/pkg/termio"
 
 	"github.com/fatih/color"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // Clone will fetch and mount a new password store from a git repo
@@ -27,14 +26,14 @@ func (s *Action) Clone(ctx context.Context, c *cli.Context) error {
 		ctx = backend.WithRCSBackendString(ctx, c.String("sync"))
 	}
 
-	if len(c.Args()) < 1 {
+	if c.Args().Len() < 1 {
 		return ExitError(ctx, ExitUsage, nil, "Usage: %s clone repo [mount]", s.Name)
 	}
 
-	repo := c.Args()[0]
+	repo := c.Args().Get(0)
 	mount := ""
-	if len(c.Args()) > 1 {
-		mount = c.Args()[1]
+	if c.Args().Len() > 1 {
+		mount = c.Args().Get(1)
 	}
 
 	path := c.String("path")
@@ -42,11 +41,18 @@ func (s *Action) Clone(ctx context.Context, c *cli.Context) error {
 	return s.clone(ctx, repo, mount, path)
 }
 
+func rcsBackendOrDefault(ctx context.Context) backend.RCSBackend {
+	if be := backend.GetRCSBackend(ctx); be != backend.Noop {
+		return be
+	}
+	return backend.GitCLI
+}
+
 func (s *Action) clone(ctx context.Context, repo, mount, path string) error {
 	if path == "" {
 		path = config.PwStoreDir(mount)
 	}
-	inited, err := s.Store.Initialized(ctx)
+	inited, err := s.Store.Initialized(ctxutil.WithGitInit(ctx, false))
 	if err != nil {
 		return ExitError(ctx, ExitUnknown, err, "Failed to initialized stores: %s", err)
 	}
@@ -55,24 +61,16 @@ func (s *Action) clone(ctx context.Context, repo, mount, path string) error {
 	}
 
 	// clone repo
-	switch backend.GetRCSBackend(ctx) {
-	case backend.GoGit:
-		if _, err := gogit.Clone(ctx, repo, path); err != nil {
-			return ExitError(ctx, ExitGit, err, "failed to clone repo '%s' to '%s'", repo, path)
-		}
-	case backend.GitCLI:
-		fallthrough
-	default:
-		ctx = backend.WithRCSBackend(ctx, backend.GitCLI)
-		if _, err := gitcli.Clone(ctx, repo, path); err != nil {
-			return ExitError(ctx, ExitGit, err, "failed to clone repo '%s' to '%s'", repo, path)
-		}
+	out.Debug(ctx, "Cloning repo '%s' to '%s'", repo, path)
+	if _, err := backend.CloneRCS(ctx, rcsBackendOrDefault(ctx), repo, path); err != nil {
+		return ExitError(ctx, ExitGit, err, "failed to clone repo '%s' to '%s'", repo, path)
 	}
 
 	// detect crypto backend based on cloned repo
 	ctx = backend.WithCryptoBackend(ctx, detectCryptoBackend(ctx, path))
 
 	// add mount
+	out.Debug(ctx, "Mounting cloned repo '%s' at '%s'", path, mount)
 	if err := s.cloneAddMount(ctx, mount, path); err != nil {
 		return err
 	}
@@ -94,7 +92,7 @@ func (s *Action) clone(ctx context.Context, repo, mount, path string) error {
 	// initialize git config
 	if err := s.Store.GitInitConfig(ctx, mount, username, email); err != nil {
 		out.Debug(ctx, "Stacktrace: %+v\n", err)
-		out.Red(ctx, "Failed to configure git: %s", err)
+		out.Error(ctx, "Failed to configure git: %s", err)
 	}
 
 	if mount != "" {
@@ -125,7 +123,7 @@ func (s *Action) cloneAddMount(ctx context.Context, mount, path string) error {
 	}
 	out.Green(ctx, "Mounted password store %s at mount point `%s` ...", path, mount)
 	s.cfg.Mounts[mount].Path.Crypto = backend.GetCryptoBackend(ctx)
-	s.cfg.Mounts[mount].Path.RCS = backend.GetRCSBackend(ctx)
+	s.cfg.Mounts[mount].Path.RCS = rcsBackendOrDefault(ctx)
 	s.cfg.Mounts[mount].Path.Storage = backend.GetStorageBackend(ctx)
 	return nil
 }
@@ -153,6 +151,7 @@ func (s *Action) cloneGetGitConfig(ctx context.Context, name string) (string, st
 
 // detectCryptoBackend tries to detect the crypto backend used in a cloned repo
 // This detection is very shallow and doesn't support all backends, yet
+// TODO(dschulz) must not depend on xc, move to registry
 func detectCryptoBackend(ctx context.Context, path string) backend.CryptoBackend {
 	if fsutil.IsFile(filepath.Join(path, xc.IDFile)) {
 		return backend.XC

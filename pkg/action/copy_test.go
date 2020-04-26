@@ -13,7 +13,8 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 )
 
 func TestCopy(t *testing.T) {
@@ -23,7 +24,8 @@ func TestCopy(t *testing.T) {
 	ctx := context.Background()
 	ctx = ctxutil.WithAlwaysYes(ctx, true)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	buf := &bytes.Buffer{}
 	out.Stdout = buf
@@ -71,13 +73,13 @@ func TestCopy(t *testing.T) {
 
 	// recursive copy: bam/ -> zab
 	fs = flag.NewFlagSet("default", flag.ContinueOnError)
-	assert.NoError(t, fs.Parse([]string{"bam/", "zab"}))
+	assert.NoError(t, fs.Parse([]string{"bam", "zab"}))
 	c = cli.NewContext(app, fs, nil)
 
 	assert.NoError(t, act.Copy(ctx, c))
 	buf.Reset()
 
-	assert.NoError(t, act.show(ctx, c, "zab/bam/zab", "", false))
+	assert.NoError(t, act.show(ctx, c, "zab/bam/zab", false))
 	assert.Equal(t, "barfoo\n", buf.String())
 	buf.Reset()
 }

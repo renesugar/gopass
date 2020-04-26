@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"runtime"
 	"strings"
 
-	fishcomp "github.com/gopasspw/gopass/pkg/completion/fish"
 	zshcomp "github.com/gopasspw/gopass/pkg/completion/zsh"
 	"github.com/gopasspw/gopass/pkg/out"
-
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 var escapeRegExp = regexp.MustCompile(`(\s|\(|\)|\<|\>|\&|\;|\#|\\|\||\*|\?)`)
@@ -29,7 +28,7 @@ func bashEscape(s string) string {
 func (s *Action) Complete(ctx context.Context, c *cli.Context) {
 	_, err := s.Store.Initialized(ctx) // important to make sure the structs are not nil
 	if err != nil {
-		out.Red(ctx, "Store not initialized: %s", err)
+		out.Error(ctx, "Store not initialized: %s", err)
 		return
 	}
 	list, err := s.Store.List(ctx, 0)
@@ -79,6 +78,9 @@ func (s *Action) CompletionBash(c *cli.Context) error {
 
 `
 	out += "complete -F _gopass_bash_autocomplete " + s.Name
+	if runtime.GOOS == "windows" {
+		out += "\ncomplete -F _gopass_bash_autocomplete " + s.Name + ".exe"
+	}
 	fmt.Fprintln(stdout, out)
 
 	return nil
@@ -86,7 +88,10 @@ func (s *Action) CompletionBash(c *cli.Context) error {
 
 // CompletionFish returns an autocompletion script for fish
 func (s *Action) CompletionFish(c *cli.Context, a *cli.App) error {
-	comp, err := fishcomp.GetCompletion(a)
+	if a == nil {
+		return fmt.Errorf("app is nil")
+	}
+	comp, err := a.ToFishCompletion()
 	if err != nil {
 		return err
 	}

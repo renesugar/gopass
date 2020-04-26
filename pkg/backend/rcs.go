@@ -15,8 +15,6 @@ const (
 	Noop RCSBackend = iota
 	// GitCLI is a git-cli based sync backend
 	GitCLI
-	// GoGit is an src-d/go-git.v4 based sync backend
-	GoGit
 )
 
 func (s RCSBackend) String() string {
@@ -39,6 +37,8 @@ type RCS interface {
 
 	Revisions(ctx context.Context, name string) ([]Revision, error)
 	GetRevision(ctx context.Context, name, revision string) ([]byte, error)
+
+	Status(ctx context.Context) ([]byte, error)
 }
 
 // Revision is a SCM revision

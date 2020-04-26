@@ -16,10 +16,6 @@ const (
 	GPGCLI
 	// XC is an experimental crypto backend
 	XC
-	// OpenPGP is a GPG1.x compatible pure-Go crypto backend
-	OpenPGP
-	// Vault is Hashicorp Vault backend
-	Vault
 )
 
 func (c CryptoBackend) String() string {

@@ -1,3 +1,5 @@
+// +build !windows
+
 package updater
 
 import (
@@ -10,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsUpdateable(t *testing.T) {
@@ -20,7 +23,7 @@ func TestIsUpdateable(t *testing.T) {
 	}()
 
 	td, err := ioutil.TempDir("", "gopass-")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer func() {
 		_ = os.RemoveAll(td)
 	}()
@@ -100,7 +103,7 @@ func TestIsUpdateable(t *testing.T) {
 		},
 	} {
 		if tc.pre != nil {
-			assert.NoError(t, tc.pre(), tc.name)
+			require.NoError(t, tc.pre(), tc.name)
 		}
 		executable = tc.exec
 		err := IsUpdateable(ctx)
@@ -123,7 +126,7 @@ func TestCheckHost(t *testing.T) {
 		ok bool
 	}{
 		{
-			in: "https://github.com/gopasspw/gopass/releases/download/v1.6.8/gopass-1.6.8-linux-amd64.tar.gz",
+			in: "https://github.com/gopasspw/gopass/releases/download/v1.8.3/gopass-1.8.3-linux-amd64.tar.gz",
 			ok: true,
 		},
 		{
@@ -132,7 +135,7 @@ func TestCheckHost(t *testing.T) {
 		},
 	} {
 		u, err := url.Parse(tc.in)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		err = updateCheckHost(ctx, u)
 		if tc.ok {
 			assert.NoError(t, err)

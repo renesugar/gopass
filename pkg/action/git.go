@@ -11,7 +11,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // GitInit initializes a git repo including basic configuration
@@ -61,14 +61,14 @@ func (s *Action) getUserData(ctx context.Context, store, un, ue string) (string,
 		var err error
 		userName, err = termio.AskForString(ctx, color.CyanString("Please enter a user name for password store git config"), userName)
 		if err != nil {
-			out.Red(ctx, "Failed to ask for user input: %s", err)
+			out.Error(ctx, "Failed to ask for user input: %s", err)
 		}
 	}
 	if userEmail == "" {
 		var err error
 		userEmail, err = termio.AskForString(ctx, color.CyanString("Please enter an email address for password store git config"), userEmail)
 		if err != nil {
-			out.Red(ctx, "Failed to ask for user input: %s", err)
+			out.Error(ctx, "Failed to ask for user input: %s", err)
 		}
 	}
 
@@ -125,4 +125,11 @@ func (s *Action) GitPush(ctx context.Context, c *cli.Context) error {
 		return ExitError(ctx, ExitUsage, nil, "Usage: %s git push <ORIGIN> <BRANCH>", s.Name)
 	}
 	return s.Store.GitPush(ctx, store, origin, branch)
+}
+
+// GitStatus prints the rcs status
+func (s *Action) GitStatus(ctx context.Context, c *cli.Context) error {
+	store := c.String("store")
+
+	return s.Store.GitStatus(ctx, store)
 }

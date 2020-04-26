@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 
@@ -8,6 +9,9 @@ import (
 )
 
 func TestList(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	ts := newTester(t)
 	defer ts.teardown()
 
@@ -47,4 +51,12 @@ foo
 	out, err = ts.run("list foo")
 	assert.NoError(t, err)
 	assert.Equal(t, strings.TrimSpace(list), out)
+
+	list = `fixed
+foo
+`
+	out, err = ts.run("list --folders")
+	assert.NoError(t, err)
+	assert.Equal(t, strings.TrimSpace(list), out)
+
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -14,24 +15,31 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 )
 
 func TestFsck(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	u := gptest.NewUnitTester(t)
 	defer u.Remove()
 
 	ctx := context.Background()
 	ctx = ctxutil.WithTerminal(ctx, false)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	buf := &bytes.Buffer{}
 	out.Stdout = buf
+	out.Stderr = buf
 	stdout = buf
 	defer func() {
 		stdout = os.Stdout
 		out.Stdout = os.Stdout
+		out.Stderr = os.Stderr
 	}()
 	color.NoColor = true
 

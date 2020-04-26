@@ -17,52 +17,44 @@ import (
 	"github.com/gopasspw/gopass/pkg/out"
 	"github.com/gopasspw/gopass/tests/gptest"
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // commandsWithError is a list of commands that return an error when
 // invoked without arguments
 var commandsWithError = map[string]struct{}{
-	".audit":                 {},
-	".audit.hibp":            {},
-	".binary.cat":            {},
-	".binary.copy":           {},
-	".binary.move":           {},
-	".binary.sum":            {},
-	".clone":                 {},
-	".copy":                  {},
-	".create":                {},
-	".delete":                {},
-	".edit":                  {},
-	".find":                  {},
-	".generate":              {},
-	".git.push":              {},
-	".git.remote.add":        {},
-	".git.remote.remove":     {},
-	".grep":                  {},
-	".history":               {},
-	".init":                  {},
-	".insert":                {},
-	".mounts.add":            {},
-	".mounts.remove":         {},
-	".move":                  {},
-	".otp":                   {},
-	".recipients.add":        {},
-	".recipients.remove":     {},
-	".setup":                 {},
-	".show":                  {},
-	".templates.edit":        {},
-	".templates.remove":      {},
-	".templates.show":        {},
-	".unclip":                {},
-	".xc.decrypt":            {},
-	".xc.encrypt":            {},
-	".xc.export":             {},
-	".xc.export-private-key": {},
-	".xc.generate":           {},
-	".xc.import":             {},
-	".xc.import-private-key": {},
-	".xc.remove":             {},
+	".audit":             {},
+	".audit.hibp":        {},
+	".binary.cat":        {},
+	".binary.copy":       {},
+	".binary.move":       {},
+	".binary.sum":        {},
+	".clone":             {},
+	".copy":              {},
+	".create":            {},
+	".delete":            {},
+	".edit":              {},
+	".find":              {},
+	".generate":          {},
+	".git.push":          {},
+	".git.remote.add":    {},
+	".git.remote.remove": {},
+	".grep":              {},
+	".history":           {},
+	".init":              {},
+	".insert":            {},
+	".mounts.add":        {},
+	".mounts.remove":     {},
+	".move":              {},
+	".otp":               {},
+	".recipients.add":    {},
+	".recipients.remove": {},
+	".setup":             {},
+	".show":              {},
+	".templates.edit":    {},
+	".templates.remove":  {},
+	".templates.show":    {},
+	".unclip":            {},
 }
 
 func TestGetCommands(t *testing.T) {
@@ -103,7 +95,7 @@ func TestGetCommands(t *testing.T) {
 	testCommands(t, c, commands, prefix)
 }
 
-func testCommands(t *testing.T, c *cli.Context, commands []cli.Command, prefix string) {
+func testCommands(t *testing.T, c *cli.Context, commands []*cli.Command, prefix string) {
 	for _, cmd := range commands {
 		if cmd.Name == "agent" || cmd.Name == "update" {
 			// the agent command is blocking
@@ -126,13 +118,11 @@ func testCommands(t *testing.T, c *cli.Context, commands []cli.Command, prefix s
 		}
 		if cmd.Action != nil {
 			fullName := prefix + "." + cmd.Name
-			if av, ok := cmd.Action.(func(c *cli.Context) error); ok {
-				if _, found := commandsWithError[fullName]; found {
-					assert.Error(t, av(c), fullName)
-					continue
-				}
-				assert.NoError(t, av(c), fullName)
+			if _, found := commandsWithError[fullName]; found {
+				assert.Error(t, cmd.Action(c), fullName)
+				continue
 			}
+			assert.NoError(t, cmd.Action(c), fullName)
 		}
 	}
 }

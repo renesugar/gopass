@@ -10,13 +10,16 @@ import (
 	"runtime"
 	"time"
 
+	_ "github.com/gopasspw/gopass/pkg/backend/crypto"
+	_ "github.com/gopasspw/gopass/pkg/backend/rcs"
+	_ "github.com/gopasspw/gopass/pkg/backend/storage"
 	"github.com/gopasspw/gopass/pkg/ctxutil"
 	"github.com/gopasspw/gopass/pkg/protect"
 
 	"github.com/blang/semver"
 	"github.com/fatih/color"
 	colorable "github.com/mattn/go-colorable"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -107,7 +110,7 @@ func (e errorWriter) Write(p []byte) (int, error) {
 }
 
 func withGlobalFlags(ctx context.Context, c *cli.Context) context.Context {
-	if c.GlobalBool("yes") {
+	if c.Bool("yes") {
 		ctx = ctxutil.WithAlwaysYes(ctx, true)
 	}
 	return ctx
@@ -121,7 +124,7 @@ func getVersion() semver.Version {
 	return semver.Version{
 		Major: 1,
 		Minor: 8,
-		Patch: 1,
+		Patch: 6,
 		Pre: []semver.PRVersion{
 			{VersionStr: "git"},
 		},

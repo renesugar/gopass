@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/gopasspw/gopass/pkg/backend"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func newMock(ctx context.Context, u *gptest.Unit) (*Action, error) {
@@ -38,8 +40,16 @@ func TestAction(t *testing.T) {
 
 	ctx := context.Background()
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
-	assert.Equal(t, "action.test", act.Name)
+	require.NoError(t, err)
+	require.NotNil(t, act)
+
+	actName := "action.test"
+
+	if runtime.GOOS == "windows" {
+		actName = "action.test.exe"
+	}
+
+	assert.Equal(t, actName, act.Name)
 
 	assert.Contains(t, act.String(), u.StoreDir(""))
 	assert.Equal(t, 0, len(act.Store.Mounts()))
@@ -47,7 +57,7 @@ func TestAction(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	td, err := ioutil.TempDir("", "gopass-")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer func() {
 		_ = os.RemoveAll(td)
 	}()
@@ -57,7 +67,7 @@ func TestNew(t *testing.T) {
 	sv := semver.Version{}
 
 	_, err = New(ctx, cfg, sv)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cfg.Root.Path = backend.FromPath(filepath.Join(td, "store"))
 	cfg.Root.Path.Crypto = backend.Plain

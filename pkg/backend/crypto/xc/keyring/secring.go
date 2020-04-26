@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/gopasspw/gopass/pkg/backend/crypto/xc/xcpb"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // Secring is private key ring
@@ -55,6 +56,9 @@ func LoadSecring(file string) (*Secring, error) {
 func (p *Secring) Save() error {
 	buf, err := proto.Marshal(p.data)
 	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(p.File), 0700); err != nil {
 		return err
 	}
 	return ioutil.WriteFile(p.File, buf, 0600)

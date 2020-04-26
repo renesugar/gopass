@@ -15,7 +15,8 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 )
 
 func TestShow(t *testing.T) {
@@ -26,7 +27,8 @@ func TestShow(t *testing.T) {
 	ctx = ctxutil.WithAlwaysYes(ctx, true)
 	ctx = ctxutil.WithTerminal(ctx, false)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	color.NoColor = true
 	buf := &bytes.Buffer{}
@@ -54,7 +56,7 @@ func TestShow(t *testing.T) {
 		Name:  "sync",
 		Usage: "sync",
 	}
-	assert.NoError(t, bf.ApplyWithError(fs))
+	assert.NoError(t, bf.Apply(fs))
 	assert.NoError(t, fs.Parse([]string{"--sync", "foo"}))
 	c = cli.NewContext(app, fs, nil)
 
@@ -90,7 +92,7 @@ func TestShow(t *testing.T) {
 	c = cli.NewContext(app, fs, nil)
 
 	assert.NoError(t, act.Show(ctx, c))
-	assert.Contains(t, buf.String(), "No safe content to display, you can force display with show -f.")
+	assert.Contains(t, buf.String(), "no safe content to display, you can force display with -f.")
 	buf.Reset()
 
 	// show foo with safecontent enabled, with the force flag
@@ -99,7 +101,7 @@ func TestShow(t *testing.T) {
 		Name:  "force",
 		Usage: "force",
 	}
-	assert.NoError(t, bf.ApplyWithError(fs))
+	assert.NoError(t, bf.Apply(fs))
 	assert.NoError(t, fs.Parse([]string{"--force", "foo"}))
 	c = cli.NewContext(app, fs, nil)
 
@@ -114,7 +116,7 @@ func TestShow(t *testing.T) {
 		Name:  "clip",
 		Usage: "clip",
 	}
-	assert.NoError(t, bf.ApplyWithError(fs))
+	assert.NoError(t, bf.Apply(fs))
 	assert.NoError(t, fs.Parse([]string{"--clip", "bar/baz"}))
 	c = cli.NewContext(app, fs, nil)
 
@@ -131,7 +133,8 @@ func TestShowHandleRevision(t *testing.T) {
 	ctx = ctxutil.WithAlwaysYes(ctx, true)
 	ctx = ctxutil.WithTerminal(ctx, false)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	color.NoColor = true
 	buf := &bytes.Buffer{}
@@ -148,7 +151,7 @@ func TestShowHandleRevision(t *testing.T) {
 	fs := flag.NewFlagSet("default", flag.ContinueOnError)
 	c := cli.NewContext(app, fs, nil)
 
-	assert.NoError(t, act.showHandleRevision(ctx, c, "foo", "", "baz"))
+	assert.NoError(t, act.showHandleRevision(ctx, c, "foo", "baz"))
 	buf.Reset()
 }
 
@@ -160,7 +163,8 @@ func TestShowHandleError(t *testing.T) {
 	ctx = ctxutil.WithAlwaysYes(ctx, true)
 	ctx = ctxutil.WithTerminal(ctx, false)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	color.NoColor = true
 	buf := &bytes.Buffer{}
@@ -189,7 +193,8 @@ func TestShowHandleYAMLError(t *testing.T) {
 	ctx = ctxutil.WithAlwaysYes(ctx, true)
 	ctx = ctxutil.WithTerminal(ctx, false)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	color.NoColor = true
 	buf := &bytes.Buffer{}
@@ -212,7 +217,8 @@ func TestShowPrintQR(t *testing.T) {
 	ctx = ctxutil.WithAlwaysYes(ctx, true)
 	ctx = ctxutil.WithTerminal(ctx, false)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	color.NoColor = true
 	buf := &bytes.Buffer{}

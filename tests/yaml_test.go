@@ -1,12 +1,17 @@
 package tests
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestYAMLAndSecret(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	ts := newTester(t)
 	defer ts.teardown()
 
@@ -20,10 +25,10 @@ func TestYAMLAndSecret(t *testing.T) {
 	assert.Equal(t, "\nError: failed to retrieve secret 'foo/bar': Entry is not in the password store\n", out)
 
 	_, err = ts.runCmd([]string{ts.Binary, "insert", "foo/bar"}, []byte("moar"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = ts.runCmd([]string{ts.Binary, "insert", "foo/bar", "baz"}, []byte("moar"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	out, err = ts.run("foo/bar baz")
 	assert.NoError(t, err)
@@ -31,6 +36,9 @@ func TestYAMLAndSecret(t *testing.T) {
 }
 
 func TestInvalidYAML(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	var testBody = `somepasswd
 ---
 Test / test.com

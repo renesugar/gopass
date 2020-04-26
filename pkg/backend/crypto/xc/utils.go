@@ -9,8 +9,8 @@ import (
 	"github.com/gopasspw/gopass/pkg/backend/crypto/xc/keyring"
 	"github.com/gopasspw/gopass/pkg/backend/crypto/xc/xcpb"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 )
 
 // RecipientIDs reads the header of the given file and extracts the
@@ -121,12 +121,12 @@ func (x *XC) Fingerprint(ctx context.Context, id string) string {
 func (x *XC) CreatePrivateKeyBatch(ctx context.Context, name, email, passphrase string) error {
 	k, err := keyring.GenerateKeypair(passphrase)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to generate keypair: %s", err)
 	}
 	k.Identity.Name = name
 	k.Identity.Email = email
 	if err := x.secring.Set(k); err != nil {
-		return err
+		return errors.Wrapf(err, "failed to set %v to secring: %s", k, err)
 	}
 	return x.secring.Save()
 }

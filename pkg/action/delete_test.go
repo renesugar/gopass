@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"flag"
+	"fmt"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/gopasspw/gopass/pkg/ctxutil"
@@ -13,7 +15,8 @@ import (
 	"github.com/gopasspw/gopass/tests/gptest"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 )
 
 func TestDelete(t *testing.T) {
@@ -23,7 +26,8 @@ func TestDelete(t *testing.T) {
 	ctx := context.Background()
 	ctx = ctxutil.WithAlwaysYes(ctx, true)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	buf := &bytes.Buffer{}
 	out.Stdout = buf
@@ -36,7 +40,13 @@ func TestDelete(t *testing.T) {
 	// delete
 	c := cli.NewContext(app, flag.NewFlagSet("default", flag.ContinueOnError), nil)
 
-	if err := act.Delete(ctx, c); err == nil || err.Error() != "Usage: action.test rm name" {
+	actName := "action.test"
+
+	if runtime.GOOS == "windows" {
+		actName = "action.test.exe"
+	}
+
+	if err := act.Delete(ctx, c); err == nil || err.Error() != fmt.Sprintf("Usage: %s rm name", actName) {
 		t.Errorf("Should fail")
 	}
 	buf.Reset()
@@ -65,7 +75,7 @@ func TestDelete(t *testing.T) {
 		Name:  "recursive",
 		Usage: "recursive",
 	}
-	assert.NoError(t, sf.ApplyWithError(fs))
+	assert.NoError(t, sf.Apply(fs))
 	assert.NoError(t, fs.Parse([]string{"--recursive=true", "foo"}))
 	c = cli.NewContext(app, fs, nil)
 

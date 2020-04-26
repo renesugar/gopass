@@ -2,12 +2,17 @@ package tests
 
 import (
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCopy(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	ts := newTester(t)
 	defer ts.teardown()
 
@@ -32,10 +37,10 @@ func TestCopy(t *testing.T) {
 
 	// recursive copy
 	_, err = ts.run("copy foo/ bar")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	out, err = ts.run("copy foo/bar foo/baz")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "", out)
 
 	orig, err := ts.run("show -f foo/bar")

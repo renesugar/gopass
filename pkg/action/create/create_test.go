@@ -16,12 +16,12 @@ import (
 	"github.com/gopasspw/gopass/pkg/termio"
 	"github.com/gopasspw/gopass/tests/mockstore"
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 func TestExtractHostname(t *testing.T) {
 	for in, out := range map[string]string{
-		"": "",
+		"":                                     "",
 		"http://www.example.org/":              "www.example.org",
 		"++#+++#jhlkadsrezu 33 553q ++++##$§&": "jhlkadsrezu_33_553q",
 		"www.example.org/?foo=bar#abc":         "www.example.org",
@@ -90,7 +90,7 @@ y
 		Name:  "print",
 		Usage: "print",
 	}
-	assert.NoError(t, sf.ApplyWithError(fs))
+	assert.NoError(t, sf.Apply(fs))
 	assert.NoError(t, fs.Parse([]string{"--print=true"}))
 	c := cli.NewContext(app, fs, nil)
 

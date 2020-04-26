@@ -2,12 +2,14 @@ package simple
 
 import (
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/fatih/color"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -45,6 +47,10 @@ func getGoldenFormat(t *testing.T) string {
 }
 
 func TestFormat(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
+
 	color.NoColor = true
 	root := New("gopass")
 	mounts := map[string]string{
@@ -72,7 +78,7 @@ func TestFormat(t *testing.T) {
 	} {
 		assert.NoError(t, root.AddFile(f, "text/plain"))
 	}
-	got := strings.TrimSpace(root.Format(0))
+	got := strings.TrimSpace(root.Format(root.Len()))
 	want := strings.TrimSpace(getGoldenFormat(t))
 	if want != got {
 		t.Errorf("Format mismatch:\n---\n%s\n---\n%s\n---", want, got)
@@ -80,6 +86,10 @@ func TestFormat(t *testing.T) {
 }
 
 func TestFormatSubtree(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
+
 	root := New("gopass")
 	for _, f := range []string{
 		"foo/bar",
@@ -91,7 +101,7 @@ func TestFormatSubtree(t *testing.T) {
 	}
 
 	sub, err := root.FindFolder("baz/ing")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	got := strings.TrimSpace(sub.Format(0))
 	want := strings.TrimSpace(goldenSubFormat)

@@ -4,12 +4,17 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBinaryCopy(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	ts := newTester(t)
 	defer ts.teardown()
 
@@ -24,17 +29,17 @@ func TestBinaryCopy(t *testing.T) {
 
 	fn := filepath.Join(ts.tempDir, "copy")
 	dat := []byte("foobar")
-	assert.NoError(t, ioutil.WriteFile(fn, dat, 0644))
+	require.NoError(t, ioutil.WriteFile(fn, dat, 0644))
 
 	_, err = ts.run("binary copy " + fn + " foo/bar")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NoError(t, os.Remove(fn))
 
 	_, err = ts.run("binary copy foo/bar " + fn)
 	assert.NoError(t, err)
 
 	buf, err := ioutil.ReadFile(fn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, buf, dat)
 
@@ -43,6 +48,9 @@ func TestBinaryCopy(t *testing.T) {
 }
 
 func TestBinaryMove(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	ts := newTester(t)
 	defer ts.teardown()
 
@@ -57,7 +65,7 @@ func TestBinaryMove(t *testing.T) {
 
 	fn := filepath.Join(ts.tempDir, "move")
 	dat := []byte("foobar")
-	assert.NoError(t, ioutil.WriteFile(fn, dat, 0644))
+	require.NoError(t, ioutil.WriteFile(fn, dat, 0644))
 
 	_, err = ts.run("binary move " + fn + " foo/bar")
 	assert.NoError(t, err)
@@ -67,7 +75,7 @@ func TestBinaryMove(t *testing.T) {
 	assert.NoError(t, err)
 
 	buf, err := ioutil.ReadFile(fn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, buf, dat)
 
@@ -76,6 +84,9 @@ func TestBinaryMove(t *testing.T) {
 }
 
 func TestBinaryShasum(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	ts := newTester(t)
 	defer ts.teardown()
 
@@ -90,7 +101,7 @@ func TestBinaryShasum(t *testing.T) {
 
 	fn := filepath.Join(ts.tempDir, "shasum")
 	dat := []byte("foobar")
-	assert.NoError(t, ioutil.WriteFile(fn, dat, 0644))
+	require.NoError(t, ioutil.WriteFile(fn, dat, 0644))
 
 	_, err = ts.run("binary move " + fn + " foo/bar")
 	assert.NoError(t, err)

@@ -15,6 +15,12 @@ import (
 
 // Load will try to load the config from one of the default locations
 func Load() *Config {
+	// check PASSWORD_STORE_DIR first for compatiability
+	if psd := os.Getenv("PASSWORD_STORE_DIR"); psd != "" {
+		cfg := loadDefault()
+		cfg.readOnly = true
+		return cfg
+	}
 	for _, l := range configLocations() {
 		if debug {
 			fmt.Printf("[DEBUG] Trying to load config from %s\n", l)
@@ -32,6 +38,10 @@ func Load() *Config {
 		}
 		return cfg
 	}
+	return loadDefault()
+}
+
+func loadDefault() *Config {
 	cfg := New()
 	cfg.Root.Path = backend.FromPath(PwStoreDir(""))
 	_ = cfg.checkDefaults()
@@ -89,6 +99,9 @@ func decode(buf []byte) (*Config, error) {
 				AutoSync: true,
 			},
 		},
+		&Pre182{
+			Root: &Pre182StoreConfig{},
+		},
 		&Pre140{
 			AutoSync: true,
 		},
@@ -118,6 +131,10 @@ func (c *Config) Save() error {
 		return err
 	}
 
+	if c.readOnly {
+		fmt.Printf("[DEBUG] No saving read only config\n")
+		return nil
+	}
 	buf, err := yaml.Marshal(c)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal YAML")

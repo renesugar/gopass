@@ -2,6 +2,7 @@ package tests
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -9,6 +10,9 @@ import (
 )
 
 func TestGenerate(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	ts := newTester(t)
 	defer ts.teardown()
 
@@ -25,7 +29,7 @@ func TestGenerate(t *testing.T) {
 	out, err = ts.run("generate -p baz 42")
 	assert.NoError(t, err)
 	lines := strings.Split(out, "\n")
-	assert.Len(t, lines, 2)
+	assert.Len(t, lines, 3)
 	assert.Equal(t, "The generated password for baz is:", lines[0])
 	assert.Len(t, lines[1], 42)
 
@@ -33,7 +37,7 @@ func TestGenerate(t *testing.T) {
 	out, err = ts.run("generate -p zab 4")
 	assert.NoError(t, err)
 	lines = strings.Split(out, "\n")
-	assert.Len(t, lines, 2)
+	assert.Len(t, lines, 3)
 	assert.Equal(t, "The generated password for zab is:", lines[0])
 	assert.Equal(t, lines[1], "aaaa")
 }

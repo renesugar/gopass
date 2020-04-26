@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/gopasspw/gopass/pkg/out"
 	"github.com/gopasspw/gopass/pkg/store"
@@ -45,6 +46,10 @@ func (r *Store) addRecipient(ctx context.Context, prefix string, root tree.Tree,
 			}
 		}
 	}
+	// workaround to keep key names from breaking the folder structure.
+	// A proper fix should change tree.AddFile to take a path and file name
+	// (which could then contain slashes).
+	key = strings.Replace(key, "/", "", -1)
 
 	return root.AddFile(prefix+key, "gopass/recipient")
 }
@@ -54,7 +59,7 @@ func (r *Store) ImportMissingPublicKeys(ctx context.Context) error {
 	for alias, sub := range r.mounts {
 		ctx := r.cfg.Mounts[alias].WithContext(ctx)
 		if err := sub.ImportMissingPublicKeys(ctx); err != nil {
-			out.Red(ctx, "[%s] Failed to import missing public keys: %s", alias, err)
+			out.Error(ctx, "[%s] Failed to import missing public keys: %s", alias, err)
 		}
 	}
 
@@ -67,7 +72,7 @@ func (r *Store) SaveRecipients(ctx context.Context) error {
 	for alias, sub := range r.mounts {
 		ctx := r.cfg.Mounts[alias].WithContext(ctx)
 		if err := sub.SaveRecipients(ctx); err != nil {
-			out.Red(ctx, "[%s] Failed to save recipients: %s", alias, err)
+			out.Error(ctx, "[%s] Failed to save recipients: %s", alias, err)
 		}
 	}
 

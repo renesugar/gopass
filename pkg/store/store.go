@@ -11,8 +11,8 @@ import (
 // RecipientCallback is a callback to verify the list of recipients
 type RecipientCallback func(context.Context, string, []string) ([]string, error)
 
-// ImportCallback is a callback to ask the user if he wants to import
-// a certain recipients public key into his keystore
+// ImportCallback is a callback to ask the user if they want to import
+// a certain recipients public key into their keystore
 type ImportCallback func(context.Context, string, []string) bool
 
 // FsckCallback is a callback to ask the user to confirm certain fsck
@@ -24,7 +24,7 @@ type TemplateStore interface {
 	GetTemplate(context.Context, string) ([]byte, error)
 	HasTemplate(context.Context, string) bool
 	ListTemplates(context.Context, string) []string
-	LookupTemplate(context.Context, string) ([]byte, bool)
+	LookupTemplate(context.Context, string) (string, []byte, bool)
 	RemoveTemplate(context.Context, string) error
 	SetTemplate(context.Context, string, []byte) error
 	TemplateTree(context.Context) (tree.Tree, error)
@@ -56,6 +56,7 @@ type Store interface {
 	Crypto() backend.Crypto
 	Storage() backend.Storage
 	GitInit(context.Context, string, string) error
+	GitStatus(context.Context, string) error
 	Alias() string
 	Copy(context.Context, string, string) error
 	Delete(context.Context, string) error

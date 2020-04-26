@@ -26,12 +26,17 @@ const (
 	ctxKeyNotifications
 	ctxKeyEditRecipients
 	ctxKeyProgressCallback
+	ctxKeyConfigDir
+	ctxKeyAlias
+	ctxKeyAutoPrint
+	ctxKeyGitInit
+	ctxKeyForce
 )
 
 // ProgressCallback is a callback for updateing progress
 type ProgressCallback func()
 
-// WithDebug returns a context with an explizit value for debug
+// WithDebug returns a context with an explicit value for debug
 func WithDebug(ctx context.Context, dbg bool) context.Context {
 	return context.WithValue(ctx, ctxKeyDebug, dbg)
 }
@@ -51,7 +56,7 @@ func IsDebug(ctx context.Context) bool {
 	return bv
 }
 
-// WithColor returns a context with an explizit value for color
+// WithColor returns a context with an explicit value for color
 func WithColor(ctx context.Context, color bool) context.Context {
 	return context.WithValue(ctx, ctxKeyColor, color)
 }
@@ -71,7 +76,7 @@ func IsColor(ctx context.Context) bool {
 	return bv
 }
 
-// WithTerminal returns a context with an explizit value for terminal
+// WithTerminal returns a context with an explicit value for terminal
 func WithTerminal(ctx context.Context, isTerm bool) context.Context {
 	return context.WithValue(ctx, ctxKeyTerminal, isTerm)
 }
@@ -91,7 +96,7 @@ func IsTerminal(ctx context.Context) bool {
 	return bv
 }
 
-// WithInteractive returns a context with an explizit value for interactive
+// WithInteractive returns a context with an explicit value for interactive
 func WithInteractive(ctx context.Context, isInteractive bool) context.Context {
 	return context.WithValue(ctx, ctxKeyInteractive, isInteractive)
 }
@@ -456,4 +461,104 @@ func GetProgressCallback(ctx context.Context) ProgressCallback {
 		return func() {}
 	}
 	return cb
+}
+
+// WithConfigDir returns a context with the config dir set.
+func WithConfigDir(ctx context.Context, cfgdir string) context.Context {
+	return context.WithValue(ctx, ctxKeyConfigDir, cfgdir)
+}
+
+// HasConfigDir returns true if a config dir has been set.
+func HasConfigDir(ctx context.Context) bool {
+	_, ok := ctx.Value(ctxKeyConfigDir).(string)
+	return ok
+}
+
+// GetConfigDir returns the config dir if set or an empty string.
+func GetConfigDir(ctx context.Context) string {
+	cd, ok := ctx.Value(ctxKeyConfigDir).(string)
+	if !ok {
+		return ""
+	}
+	return cd
+}
+
+// WithAlias returns an context with the alias set.
+func WithAlias(ctx context.Context, alias string) context.Context {
+	return context.WithValue(ctx, ctxKeyAlias, alias)
+}
+
+// HasAlias returns true if a value for alias has been set.
+func HasAlias(ctx context.Context) bool {
+	_, ok := ctx.Value(ctxKeyAlias).(string)
+	return ok
+}
+
+// GetAlias returns an alias if it has been set or an empty string otherwise.
+func GetAlias(ctx context.Context) string {
+	a, ok := ctx.Value(ctxKeyAlias).(string)
+	if !ok {
+		return ""
+	}
+	return a
+}
+
+// WithAutoPrint returns a context with the value for auto print set.
+func WithAutoPrint(ctx context.Context, bv bool) context.Context {
+	return context.WithValue(ctx, ctxKeyAutoPrint, bv)
+}
+
+// HasAutoPrint returns true if a specific value for auto print was set.
+func HasAutoPrint(ctx context.Context) bool {
+	_, ok := ctx.Value(ctxKeyAutoPrint).(bool)
+	return ok
+}
+
+// IsAutoPrint returns the value of auto print or false if none was set.
+func IsAutoPrint(ctx context.Context) bool {
+	bv, ok := ctx.Value(ctxKeyAutoPrint).(bool)
+	if !ok {
+		return false
+	}
+	return bv
+}
+
+// WithGitInit returns a context with the value for the git init flag set.
+func WithGitInit(ctx context.Context, bv bool) context.Context {
+	return context.WithValue(ctx, ctxKeyGitInit, bv)
+}
+
+// HasGitInit returns true if the git init flag was set.
+func HasGitInit(ctx context.Context) bool {
+	_, ok := ctx.Value(ctxKeyGitInit).(bool)
+	return ok
+}
+
+// IsGitInit returns the value of the git init flag or ture if none was set.
+func IsGitInit(ctx context.Context) bool {
+	bv, ok := ctx.Value(ctxKeyGitInit).(bool)
+	if !ok {
+		return true
+	}
+	return bv
+}
+
+// WithForce returns a context with the force flag set
+func WithForce(ctx context.Context, bv bool) context.Context {
+	return context.WithValue(ctx, ctxKeyForce, bv)
+}
+
+// HasForce returns true if the context has the force flag set
+func HasForce(ctx context.Context) bool {
+	_, ok := ctx.Value(ctxKeyForce).(bool)
+	return ok
+}
+
+// IsForce returns the force flag value of the default (false)
+func IsForce(ctx context.Context) bool {
+	bv, ok := ctx.Value(ctxKeyForce).(bool)
+	if !ok {
+		return false
+	}
+	return bv
 }

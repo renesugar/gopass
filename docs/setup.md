@@ -33,6 +33,12 @@ _Note:_ installing in Ubuntu 16.04 will require you to install `gnupg2`.
 yum install gnupg2 git rng-tools
 ```
 
+#### Arch Linux
+
+```bash
+pacman -S gnupg2 git rng-tools
+```
+
 #### MacOS
 
 If you haven't already, install [homebrew](http://brew.sh). And then:
@@ -45,6 +51,10 @@ brew install gnupg2 git
 
 * Download and install [GPG4Win](https://www.gpg4win.org/).
 * Download and install [the Windows git installer](https://git-scm.com/download/win).
+
+Alternatively, it can be installed via [chocolatey](https://chocolatey.org/packages/gopass)
+
+* `choco install gopass` (requires admin privileges)
 
 #### OpenBSD
 
@@ -62,13 +72,13 @@ so some features (e.g. version checks, auto-update) are unavailable.
 
 Build it
 
-```
+```bash
 docker build -t gopass github.com/gopasspw/gopass#master
 ```
 
 Use it
 
-```
+```bash
 alias gopass="docker run --rm -ti -v $HOME:/root gopass"
 ```
 
@@ -78,13 +88,18 @@ gopass depends on the `gpg` program for encryption and decryption. You **must** 
 suitable key pair. To list your current keys, you can do:
 
 ```bash
-gpg --list-keys
+gpg --list-secret-keys
 ```
 
 If there is no output, then you don't have any keys. To create a new key:
 
 ```bash
 gpg --gen-key
+```
+
+For macOS you have to use the following to get all options
+```bash
+gpg --full-generate-key
 ```
 
 You will be presented with several options:
@@ -96,7 +111,7 @@ You will be presented with several options:
 * A comment is not necessary.
 * Pass phrase: Make sure to pick a very long pass phrase, not just a simple password. Remember this should be stronger than any of the secrets you store in the password store. You can configure the GPG Agent later to save you repetitive typing.
 
-Now, you have created a public and private key pair. If you don't know what that means, of if you are not familiar with GPG, we highly recommend you do a little reading on the subject. Check out the following manuals:
+Now, you have created a public and private key pair. If you don't know what that means, or if you are not familiar with GPG, we highly recommend you do a little reading on the subject. Check out the following manuals:
 
 * ["git + gpg, know thy commits" at coderwall](https://coderwall.com/p/d3uo3w/git-gpg-know-thy-commits)
 * ["Generating a new GPG key" by GitHub](https://help.github.com/articles/generating-a-new-gpg-key/)
@@ -131,6 +146,13 @@ brew install gopass
 
 Alternatively, you can install gopass from the appropriate Darwin release from the repository [releases page](https://github.com/gopasspw/gopass/releases).
 
+If you're using a password on your gpg key, you also have to install pinentry-mac from brew and configure it in your ~/gpg/gpg-agent.conf
+
+```bash
+brew install pinentry-mac
+echo "pinentry-program /usr/local/bin/pinentry-mac" >> ~/.gnupg/gpg-agent.conf
+```
+
 ### Ubuntu & Debian
 
 **WARNING**: The official Debian repositories contain a package named `gopass` that
@@ -146,7 +168,7 @@ First you need to add our archive signing key and add the package source.
 
 ```bash
 wget -q -O- https://api.bintray.com/orgs/gopasspw/keys/gpg/public.key | sudo apt-key add -
-echo "deb https://dl.bintray.com/gopasspw/gopass trusty main" | sudo tee /etc/apt/sources.list.d/gopass.list
+echo "deb https://dl.bintray.com/gopasspw/gopass buster main" | sudo tee /etc/apt/sources.list.d/gopass.list
 ```
 
 The fingerprint of the repository key `4096R/81C083D4` is `C396 F836 273B 06BD C4A5  7334 22C4 6056 81C0 83D4`.
@@ -181,7 +203,7 @@ emerge -av gopass
 
 ### RedHat / CentOS
 
-There is an inoffical RPM build maintained by a contributor.
+There is an unofficial RPM build maintained by a contributor.
 
 ```bash
 # if you're using dnf (needs dnf-plugins-core)
@@ -192,17 +214,35 @@ yum copr enable daftaupe/gopass
 yum install gopass
 ```
 
+### Arch Linux
+```bash
+pacman -S gopass
+```
+
+
 ### Windows
 
 **WARNING**: Windows is not yet officially supported. We try to support it in the future. These are steps are only meant to help you setup gopass on Windows so you can provide us with feedback about the current state of our Windows support.
 
-Download and install a suitable Windows build from the repository [releases page](https://github.com/gopasspw/gopass/releases).
+You can install `gopass` by [Chocolatey](https://chocolatey.org/):
+
+```bash
+choco install gopass
+```
+
+Or by [Scoop](https://scoop.sh/):
+
+```bash
+scoop install gopass
+```
+
+Alternatively, download and install a suitable Windows build from the repository [releases page](https://github.com/gopasspw/gopass/releases).
 
 ### Installing from Source
 
 If you have [Go](https://golang.org/) already installed, you can use `go get` to automatically download the latest version:
 
-```
+```bash
 go get -u github.com/gopasspw/gopass
 ```
 
@@ -234,21 +274,31 @@ Before migrating to gopass, you may have been using other password managers (suc
 
 ### Enable Bash Auto completion
 
-If you use Bash, you can run one of the following commands to enable auto completion for sub commands like `gopass show`, `gopass ls` and others.
+If you use Bash, you can run one of the following commands to enable auto completion for sub-commands like `gopass show`, `gopass ls` and others.
 
-```
+```bash
 source <(gopass completion bash)
 ```
 
 **MacOS**: The version of bash shipped with MacOS may [require a workaround](https://stackoverflow.com/questions/32596123/why-source-command-doesnt-work-with-process-substitution-in-bash-3-2) to enable auto completion. If the instructions above do not work try the following one:
 
-```
+```bash
 source /dev/stdin <<<"$(gopass completion bash)"
 ```
 
 ### Enable  Z Shell Auto completion
 
 If you use zsh, `make install` or `make install-completion` should install the completion in the correct location.
+
+If zsh autocompletion is still not functional, you can run the following commands:
+
+```
+$ gopass completion zsh > ~/_gopass 
+$ sudo mv ~/_gopass /usr/share/zsh/site-functions/_gopass
+$ rm -i ${ZDOTDIR:-${HOME:?No ZDOTDIR or HOME}}/.zcompdump && compinit
+
+```
+Exit and re-run zsh if the last command failed.
 
 ### Enable fish completion
 
@@ -273,29 +323,35 @@ You can then bind these command lines to your preferred shortcuts in your window
 
 ### Filling in passwords from browser
 
-Gopass allows filling in passwords in browsers leveraging a browser plugin like [gopass bridge](https://github.com/martinhoefling/gopassbridge).
+Gopass allows filling in passwords in browsers leveraging a browser plugin like [gopass bridge](https://github.com/gopasspw/gopassbridge).
 The browser plugin communicates with gopass via JSON messages. To allow the plugin to start gopass, a [native messaging manifest](https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Native_messaging) must be installed for each browser.
-Chrome, chromium and Firefox are supported, currently. Further a wrapper must be installed to setup gpg-agent and execute `gopass jsonapi listen`.
+Chrome, Chromium and Firefox are supported, currently. Further a wrapper must be installed to setup gpg-agent and execute `gopass jsonapi listen`.
 
 ```bash
 # Asks all questions concerning browser and setup
 gopass jsonapi configure
 
 # Do not copy / install any files, just print their location and content
-gopass jsonapi configure --print-only
+gopass jsonapi configure --print
 
 # Specify browser and wrapper path
 gopass jsonapi configure --browser chrome --path /home/user/.local/
-
 ```
 
 The user name/login is determined from `login`, `username` and `user` yaml attributes (after the --- separator) like this:
+
 ```
 <your password>
 ---
 username: <your username>
 ```
+
 As fallback, the last part of the path is used, e.g. `theuser1` for `Internet/github.com/theuser1` entry.
+
+**Windows**:
+The jsonapi setup copies the current gopass binary as wrapper (`gopass_native_host.exe` calls directly the listener).
+It is recommend to run `gopass jsonapi configure` after **update** to use also the latest version in the browser.
+The **global** setup requires to run `gopass jsonapi configure` as Administrator.
 
 ### Storing and Syncing your Password Store with Google Drive / Dropbox / etc.
 
@@ -317,6 +373,8 @@ Because gopass is fully backwards compatible with pass, you can use some existin
 * iOS - [Pass for iOS](https://github.com/davidjb/pass-ios#readme)
 * Windows / MacOS / Linux -  [QtPass](https://qtpass.org/)
 
+There is also [Gopass UI](https://github.com/codecentric/gopass-ui) which was exclusively implemented for gopass and is available for MacOS, Linux and Windows.
+
 Others can be found at the "Compatible Clients" section of the [official pass website](https://www.passwordstore.org/).
 
 ## Using gopass
@@ -330,7 +388,7 @@ will guide you through the setup of gopass.
 
 ### Batch bootstrapping
 
-In order to simplify the setup of gopass for your team members if can be run in a fully scripted bootstrap mode.
+In order to simplify the setup of gopass for your team members it can be run in a fully scripted bootstrap mode.
 
 ```bash
 # First initialize a new shared store and push it to an empty remote

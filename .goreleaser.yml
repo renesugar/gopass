@@ -14,11 +14,9 @@ build:
     - darwin
     - freebsd
     - linux
-    - netbsd
     - openbsd
     - windows
   goarch:
-    - 386
     - amd64
   goarm:
     - 6
@@ -65,6 +63,7 @@ brew:
   dependencies:
     - git
     - gnupg
+    - terminal-notifier
   install:  |
     ENV["GOPATH"] = buildpath
     (buildpath/"src/github.com/gopasspw/gopass").install buildpath.children

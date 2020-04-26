@@ -87,7 +87,7 @@ func getRecipientInfo(ctx context.Context, crypto backend.Crypto, name string, r
 
 		kl, err := crypto.FindPublicKeys(ctx, r)
 		if err != nil {
-			out.Red(ctx, "Failed to read public key for '%s': %s", r, err)
+			out.Error(ctx, "Failed to read public key for '%s': %s", r, err)
 			continue
 		}
 		ri := recipientInfo{
@@ -130,6 +130,10 @@ func confirmAskRecipients(ctx context.Context, name string, ris recipientInfos) 
 
 	recipients := ris.Recipients()
 
+	if ctxutil.IsForce(ctx) {
+		return recipients, nil
+	}
+
 	yes, err := termio.AskForBool(ctx, "Do you want to continue?", true)
 	if err != nil {
 		return recipients, errors.Wrapf(err, "failed to read user input")
@@ -148,7 +152,7 @@ func confirmEditRecipients(ctx context.Context, name string, ris recipientInfos)
 	fmt.Fprintf(buf, "# Lines starting with # will be ignored.\n")
 	fmt.Fprintf(buf, "# WARNING: Do not edit existing entries.\n")
 	for _, ri := range ris {
-		fmt.Fprintf(buf, ri.String())
+		fmt.Fprint(buf, ri.String())
 	}
 	out, err := editor.Invoke(ctx, editor.Path(nil), buf.Bytes())
 	if err != nil {
@@ -275,22 +279,23 @@ type mountPointer interface {
 	MountPoints() []string
 }
 
+func sorted(s []string) []string {
+	sort.Strings(s)
+	return s
+}
+
 // AskForStore shows a store / mount point selection
 func AskForStore(ctx context.Context, s mountPointer) string {
 	if !ctxutil.IsInteractive(ctx) {
 		return ""
 	}
 
-	mps := s.MountPoints()
-	if len(mps) < 1 {
+	stores := []string{"<root>"}
+	stores = append(stores, sorted(s.MountPoints())...)
+	if len(stores) < 2 {
 		return ""
 	}
-	if len(mps) < 2 {
-		return mps[0]
-	}
 
-	stores := []string{"<root>"}
-	stores = append(stores, mps...)
 	act, sel := GetSelection(ctx, "Please select the store you would like to use", "<↑/↓> to change the selection, <→> to select, <ESC> to quit", stores)
 	switch act {
 	case "default":

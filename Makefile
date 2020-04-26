@@ -1,5 +1,6 @@
 FIRST_GOPATH              := $(firstword $(subst :, ,$(GOPATH)))
 PKGS                      := $(shell go list ./... | grep -v /tests | grep -v /xcpb | grep -v /openpgp)
+PKGSWIN                   := $(shell go list ./... | grep -v /tests | grep -v /xcpb | grep -v /openpgp | grep -v /clipboard | grep -v /jsonapi)
 GOFILES_NOVENDOR          := $(shell find . -name vendor -prune -o -type f -name '*.go' -not -name '*.pb.go' -print)
 GOFILES_BUILD             := $(shell find . -type f -name '*.go' -not -name '*_test.go')
 PROTOFILES                := $(shell find . -name vendor -prune -o -type f -name '*.proto' -print)
@@ -11,22 +12,26 @@ FISH_COMPLETION_OUTPUT    := fish.completion
 ZSH_COMPLETION_OUTPUT     := zsh.completion
 # Support reproducible builds by embedding date according to SOURCE_DATE_EPOCH if present
 DATE                      := $(shell date -u -d "@$(SOURCE_DATE_EPOCH)" '+%FT%T%z' 2>/dev/null || date -u '+%FT%T%z')
-BUILDFLAGS                := -ldflags="-s -w -X main.version=$(GOPASS_VERSION) -X main.commit=$(GOPASS_REVISION) -X main.date=$(DATE)" -gcflags="-trimpath=$(GOPATH)" -asmflags="-trimpath=$(GOPATH)" -buildmode=pie
+BUILDFLAGS_NOPIE                := -ldflags="-s -w -X main.version=$(GOPASS_VERSION) -X main.commit=$(GOPASS_REVISION) -X main.date=$(DATE)" -gcflags="-trimpath=$(GOPATH)" -asmflags="-trimpath=$(GOPATH)"
+BUILDFLAGS                ?= $(BUILDFLAGS_NOPIE) -buildmode=pie
 TESTFLAGS                 ?=
 PWD                       := $(shell pwd)
 PREFIX                    ?= $(GOPATH)
 BINDIR                    ?= $(PREFIX)/bin
-GO                        := go
+GO                        := GO111MODULE=on go
 GOOS                      ?= $(shell go version | cut -d' ' -f4 | cut -d'/' -f1)
 GOARCH                    ?= $(shell go version | cut -d' ' -f4 | cut -d'/' -f2)
 TAGS                      ?= netgo
+export GO111MODULE=on
 
 OK := $(shell tput setaf 6; echo ' [OK]'; tput sgr0;)
 
 all: build completion
 build: $(GOPASS_OUTPUT)
 completion: $(BASH_COMPLETION_OUTPUT) $(FISH_COMPLETION_OUTPUT) $(ZSH_COMPLETION_OUTPUT)
-travis: sysinfo crosscompile build install legal test codequality completion manifests
+travis: sysinfo crosscompile build install fulltest codequality completion manifests full
+travis-osx: sysinfo build install fulltest completion manifests full
+travis-windows: sysinfo build install fulltest-nocover completion manifests full
 
 sysinfo:
 	@echo ">> SYSTEM INFORMATION"
@@ -74,11 +79,27 @@ install: all install-completion
 	@printf '%s\n' '$(OK)'
 
 fulltest: $(GOPASS_OUTPUT)
+	@echo ">> TEST, \"full-mode\": race detector off, build tags: xc"
+	@echo "mode: atomic" > coverage-all.out
+	@$(foreach pkg, $(PKGS),\
+	    echo -n "     ";\
+		go test -run '(Test|Example)' $(BUILDFLAGS) $(TESTFLAGS) -coverprofile=coverage.out -covermode=atomic $(pkg) -tags 'xc' || exit 1;\
+		tail -n +2 coverage.out >> coverage-all.out;)
+	@$(GO) tool cover -html=coverage-all.out -o coverage-all.html
+
+fulltest-nocover: $(GOPASS_OUTPUT)
+	@echo ">> TEST, \"full-mode-no-coverage\": race detector off, build tags: xc"
+	@echo "mode: atomic" > coverage-all.out
+	@$(foreach pkg, $(PKGSWIN),\
+	    echo -n "     "; \
+		go test -run '(Test|Example)' $(BUILDFLAGS) $(TESTFLAGS) $(pkg) -tags 'xc' || exit 1;)
+
+racetest: $(GOPASS_OUTPUT)
 	@echo ">> TEST, \"full-mode\": race detector on"
 	@echo "mode: atomic" > coverage-all.out
 	@$(foreach pkg, $(PKGS),\
 	    echo -n "     ";\
-		go test -run '(Test|Example)' $(BUILDFLAGS) $(TESTFLAGS) -race -coverprofile=coverage.out -covermode=atomic $(pkg) || exit 1;\
+		go test -run '(Test|Example)' $(BUILDFLAGS) $(TESTFLAGS) -race -coverprofile=coverage.out -covermode=atomic $(pkg) -tags 'xc' || exit 1;\
 		tail -n +2 coverage.out >> coverage-all.out;)
 	@$(GO) tool cover -html=coverage-all.out -o coverage-all.html
 
@@ -105,6 +126,9 @@ crosscompile:
 	@GOOS=windows GOARCH=amd64 $(GO) build -o $(GOPASS_OUTPUT)-windows-amd64
 	@printf '%s\n' '$(OK)'
 
+full:
+	@echo -n ">> COMPILE linux/amd64 xc"
+	$(GO) build -o $(GOPASS_OUTPUT)-linux-amd64-full -tags "xc"
 
 %.completion: $(GOPASS_OUTPUT)
 	@printf ">> $* completion, output = $@"
@@ -122,16 +146,6 @@ manifests: $(GOPASS_OUTPUT)
 	@./gopass --yes jsonapi configure --path=. --manifest-path=manifest-chrome.json --browser=chrome --gopass-path=gopass --print=false
 	@./gopass --yes jsonapi configure --path=. --manifest-path=manifest-chromium.json --browser=chromium --gopass-path=gopass --print=false
 	@./gopass --yes jsonapi configure --path=. --manifest-path=manifest-firefox.json --browser=firefox --gopass-path=gopass --print=false
-
-legal:
-	@echo ">> LEGAL"
-	@echo -n "   LICENSES   "
-	@which licenses > /dev/null; if [ $$? -ne 0 ]; then \
-		$(GO) get -u github.com/pmezard/licenses; \
-	fi
-	@licenses . > NOTICE.new
-	@diff NOTICE.txt NOTICE.new || exit 1
-	@printf '%s\n' '$(OK)'
 
 codequality:
 	@echo ">> CODE QUALITY"
@@ -167,7 +181,7 @@ codequality:
 
 	@echo -n "     LINT      "
 	@which golint > /dev/null; if [ $$? -ne 0 ]; then \
-		$(GO) get -u github.com/golang/lint/golint; \
+		$(GO) get -u golang.org/x/lint/golint; \
 	fi
 	@$(foreach pkg, $(PKGS),\
 			golint -set_exit_status $(pkg) || exit 1;)
@@ -188,13 +202,14 @@ codequality:
 			misspell --error $(gofile) || exit 1;)
 	@printf '%s\n' '$(OK)'
 
-	@echo -n "     MEGACHECK "
-	@which megacheck > /dev/null; if [ $$? -ne 0  ]; then \
-		$(GO) get -u honnef.co/go/tools/cmd/megacheck; \
+	@echo -n "     STATICCHECK "
+	@which staticcheck > /dev/null; if [ $$? -ne 0  ]; then \
+		$(GO) get -u honnef.co/go/tools/cmd/staticcheck; \
 	fi
-	@megacheck $(PKGS) || exit 1
+	@staticcheck $(PKGS) || exit 1
 	@printf '%s\n' '$(OK)'
 
+codequality-nomod:
 	@echo -n "     ERRCHECK  "
 	@which errcheck > /dev/null; if [ $$? -ne 0  ]; then \
 		$(GO) get -u github.com/kisielk/errcheck; \
@@ -204,7 +219,7 @@ codequality:
 
 	@echo -n "     INTERFACER"
 	@which interfacer > /dev/null; if [ $$? -ne 0 ]; then \
-		$(GO) get mvdan.cc/interfacer; \
+		$(GO) get -u mvdan.cc/interfacer; \
 	fi
 	@interfacer $(PKGS)
 	@printf '%s\n' '$(OK)'
@@ -268,5 +283,11 @@ bintray: check-release-env
 	@curl -f -X POST -H "X-GPG-PASSPHRASE:$(BINTRAY_GPG_PASSPHRASE)" -u$(BINTRAY_USER):$(BINTRAY_API_KEY) https://api.bintray.com/calc_metadata/gopasspw/gopass
 	@echo ""
 	@echo ">> DONE"
+
+deps:
+	go build -v ./...
+
+upgrade:
+	go get -u
 
 .PHONY: clean build completion install sysinfo crosscompile test codequality release goreleaser debsign bintray

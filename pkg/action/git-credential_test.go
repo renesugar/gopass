@@ -6,6 +6,7 @@ import (
 	"flag"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -15,7 +16,8 @@ import (
 	"github.com/gopasspw/gopass/pkg/termio"
 	"github.com/gopasspw/gopass/tests/gptest"
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 )
 
 func TestGitCredentialFormat(t *testing.T) {
@@ -79,12 +81,16 @@ func TestGitCredentialFormat(t *testing.T) {
 }
 
 func TestGitCredentialHelper(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows.")
+	}
 	u := gptest.NewUnitTester(t)
 	defer u.Remove()
 
 	ctx := context.Background()
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	stdout := &bytes.Buffer{}
 	out.Stdout = stdout

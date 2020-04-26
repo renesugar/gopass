@@ -20,7 +20,8 @@ import (
 	"github.com/gopasspw/gopass/tests/gptest"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v2"
 )
 
 const testHibpSample = `000000005AD76BD555C1D6D771DE417A4B87E4B4
@@ -42,7 +43,8 @@ func TestHIBPDump(t *testing.T) {
 	ctx = ctxutil.WithAlwaysYes(ctx, true)
 	ctx = out.WithHidden(ctx, true)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	buf := &bytes.Buffer{}
 	out.Stdout = buf
@@ -65,7 +67,7 @@ func TestHIBPDump(t *testing.T) {
 		Name:  "dumps",
 		Usage: "dumps",
 	}
-	assert.NoError(t, bf.ApplyWithError(fs))
+	assert.NoError(t, bf.Apply(fs))
 	assert.NoError(t, fs.Parse([]string{"--dumps=" + fn}))
 	c = cli.NewContext(app, fs, nil)
 
@@ -80,7 +82,7 @@ func TestHIBPDump(t *testing.T) {
 		Name:  "dumps",
 		Usage: "dumps",
 	}
-	assert.NoError(t, bf.ApplyWithError(fs))
+	assert.NoError(t, bf.Apply(fs))
 	assert.NoError(t, fs.Parse([]string{"--dumps=" + fn}))
 	c = cli.NewContext(app, fs, nil)
 	assert.NoError(t, testWriteGZ(fn, []byte(testHibpSample)))
@@ -114,7 +116,8 @@ func TestHIBPAPI(t *testing.T) {
 	ctx = ctxutil.WithAlwaysYes(ctx, true)
 	ctx = out.WithHidden(ctx, true)
 	act, err := newMock(ctx, u)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, act)
 
 	buf := &bytes.Buffer{}
 	out.Stdout = buf
@@ -128,7 +131,7 @@ func TestHIBPAPI(t *testing.T) {
 		Name:  "api",
 		Usage: "api",
 	}
-	assert.NoError(t, bf.ApplyWithError(fs))
+	assert.NoError(t, bf.Apply(fs))
 	assert.NoError(t, fs.Parse([]string{"--api=true"}))
 	c := cli.NewContext(app, fs, nil)
 
